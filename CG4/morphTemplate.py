@@ -78,6 +78,9 @@ def backward(): # from Z to A
         for a,z in zip(polygonA, polygonZ):
             polygon.append([(1-time)*a[0]+time*z[0], (1-time)*a[1]+time*z[1]])
 
+        if time < 0.1: # to fix the missing foot, because len(PolA) > len(PolZ)
+            polygon.append(polygonA[-1])
+
         #print(time)
         draw()
     
