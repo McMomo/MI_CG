@@ -1,3 +1,4 @@
+import copy
 from Tkinter import *
 from Canvas import *
 import sys
@@ -10,14 +11,10 @@ CCOLOR = "#0000FF" # blue
 
 elementList = [] # list of elements (used by Canvas.delete(...))
 
-polygon = [[50,50],[350,50],[350,350],[50,350],[50,50]]
+polygon = []
 
 polygonA = []
 polygonZ = []
-
-#TODO: Olgon A und Z liste anlegen
-#Vektor (lineare Interpolation) berechnen und auf forward/backward Verctor entlangwandern = morph
-
 
 time = 0
 dt = 0.01
@@ -120,11 +117,14 @@ if __name__ == "__main__":
 
     fileZ = open("polygonZ.dat")
     for line in fileZ.readlines():
-        polygonZ.insert(0, [float(line.split()[0]) * WIDTH, float(line.split()[1]) * HEIGHT])
+        polygonZ.insert(0, [float(line.split()[0]) * WIDTH, (1-float(line.split()[1])) * HEIGHT])
 
     fileA = open("polygonA.dat")
     for line in fileA.readlines():
-        polygonA.insert(0, [float(line.split()[0]) * WIDTH, float(line.split()[1]) * HEIGHT])
+        polygonA.insert(0, [float(line.split()[0]) * WIDTH, (1-float(line.split()[1])) * HEIGHT])
+
+    polygon = copy.deepcopy(polygonA)
+    draw()
 
     # start
     mw.mainloop()
