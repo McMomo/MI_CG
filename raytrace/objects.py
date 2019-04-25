@@ -1,4 +1,11 @@
 from numpy import *
+from colour import Color
+from PIL import Image
+import datetime
+
+BACKGROUND_COLOR = Color(rgb=(0,0,0))
+wRes = 400
+hRes = 400
 
 class Ray(object): #S30
     def __init__(self, origin, direction):
@@ -12,21 +19,7 @@ class Ray(object): #S30
         return self.origin + self.direction.scale(t)
 
 
-def rayCasting(imageWidth, imageHeight): #S31
-    for x in range(imageWidth):
-        for y in range(imageHeight):
-            ray = calcRay(x,y)
-            maxdist = float('inf')
-            color = BACKGROUND_COLOR
-            for object in objectlist:
-                hitdist = object.intersectionParameter(ray)
-                if hitdist:
-                    if hitdist < maxdist:
-                        maxdist = hitdist
-                        color = object.colorAt(ray)
-            image.putpixel((x,y), color)
-
-def rayPerPixel(): #S33
+def calcRay(width, height): #S33
     pixelWidth = width / (wRes-1)
     pixelHeight = height /(hRes-1)
     for y in range(hRes):
@@ -74,3 +67,50 @@ class Plane(object): #S39
 
     def normalAt(self, p):
         return self.normal
+
+class Triangle(object):
+    def __init__(self, a, b, c):
+        self.a = a #point
+        self.b = b #point
+        self.c = c #point
+        self.u = self.b - self.a #direction vector
+        self.v = self.c - self.a #direction vector
+
+    def __repr__(self):
+        return "Triangle(%s,%s,%s)" %(repr(self.a), repr(self.b), repr(self.c))
+
+    def intersectionParameter(self, ray):
+        w = ray.origin - self.a
+        dv = ray.direction.cross(self.v)
+        dvu = dv.dot(self.u)
+        if dvu == 0.0:
+            return None
+        wu = w.cross(self.u)
+        r = dv.dot(w) / dvu
+        s = wu.dot(ray.direction) / dvu
+        if 0 <= r and r <= 1 and 0 <= s and s <= 1 and r+s <= 1:
+            return wu.dot(self.v) / dvu
+        else:
+            return None
+
+    def normalAt(self, p):
+        return self.u.cross(self.v).normalized()
+
+def rayCasting(imageWidth, imageHeight): #S31
+
+    for x in range(imageWidth):
+        for y in range(imageHeight):
+            ray = calcRay(x,y)
+            maxdist = float('inf')
+            color = BACKGROUND_COLOR
+            for object in objectlist:
+                hitdist = object.intersectionParameter(ray)
+                if hitdist:
+                    if hitdist < maxdist:
+                        maxdist = hitdist
+                        color = object.colorAt(ray)
+            image.putpixel((x,y), color)
+
+objectlist = []
+image = Image.new("RGB", "(wRes, hRes)")
+image.save("images/"+str(datetime.datetime.now()) +".jpg")

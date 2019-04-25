@@ -17,7 +17,7 @@ polygonA = []
 polygonZ = []
 
 time = 0
-dt = 0.01
+dt = 0.001
 
 def drawObjekts():
     """ draw polygon and points """
@@ -122,6 +122,7 @@ if __name__ == "__main__":
     fileA = open("polygonA.dat")
     for line in fileA.readlines():
         polygonA.insert(0, [float(line.split()[0]) * WIDTH, (1-float(line.split()[1])) * HEIGHT])
+
 
     polygon = copy.deepcopy(polygonA)
     draw()
