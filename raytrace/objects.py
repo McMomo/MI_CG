@@ -1,37 +1,11 @@
 from numpy import *
-from colour import Color
-from PIL import Image
-import datetime
-
-BACKGROUND_COLOR = Color(rgb=(0,0,0))
-wRes = 400
-hRes = 400
-
-class Ray(object): #S30
-    def __init__(self, origin, direction):
-        self.origin = origin # point
-        self.direction = direction.normalized() #vector
-
-    def __repr__(self):
-        return "Ray(%s,%s)" %(repr(self.origin), repr(self.direction))
-
-    def pointAtParameter(self, t):
-        return self.origin + self.direction.scale(t)
-
-
-def calcRay(width, height): #S33
-    pixelWidth = width / (wRes-1)
-    pixelHeight = height /(hRes-1)
-    for y in range(hRes):
-        for x in range(wRes):
-            xcomp = s.scale(x*pixelWidth - width/2)
-            ycomp = u.scale(y*pixelHeight - height/2)
-            ray = Ray(e, f + xcomp + ycomp) # evtl. mehrere Strahlen pro Pixel
 
 class Sphere(object): #S37
-    def __init__(self, center, radius):
+    def __init__(self, center, radius, color):
         self.center = center #point
         self.radius = radius #scalar
+
+        self.color = color
 
     def __repr__(self):
         return "Sphere(%s,%s)" %(repr(self.center), self.radius)
@@ -48,18 +22,22 @@ class Sphere(object): #S37
     def normalAt(self, p):
         return (p-self.center).normalized()
 
+
+
 class Plane(object): #S39
-    def __init__(self, point, normal):
+    def __init__(self, point, normal, color):
         self.point = point # point
-        self.normal = normal.normalized() #vector
+        self.normal = normal/np.linalg.norm(normal) #normal.normalized() #vector
+
+        self.color = color
 
     def __repr__(self):
         return "Plane(%s,%s)" %(repr(self.point), repr(self.normal))
 
     def intersectionParamter(self, ray):
         op = ray.origin - self.point
-        a = op.dot(self.normal)
-        b = ray.direction.dot(self.normal)
+        a = np.dot(op, self.normal)
+        b = np.dot(ray.direction, self.normal)
         if b:
             return (-a)/b
         else:
@@ -67,6 +45,8 @@ class Plane(object): #S39
 
     def normalAt(self, p):
         return self.normal
+
+
 
 class Triangle(object):
     def __init__(self, a, b, c):
@@ -95,22 +75,3 @@ class Triangle(object):
 
     def normalAt(self, p):
         return self.u.cross(self.v).normalized()
-
-def rayCasting(imageWidth, imageHeight): #S31
-
-    for x in range(imageWidth):
-        for y in range(imageHeight):
-            ray = calcRay(x,y)
-            maxdist = float('inf')
-            color = BACKGROUND_COLOR
-            for object in objectlist:
-                hitdist = object.intersectionParameter(ray)
-                if hitdist:
-                    if hitdist < maxdist:
-                        maxdist = hitdist
-                        color = object.colorAt(ray)
-            image.putpixel((x,y), color)
-
-objectlist = []
-image = Image.new("RGB", "(wRes, hRes)")
-image.save("images/"+str(datetime.datetime.now()) +".jpg")
