@@ -12,22 +12,23 @@ class Sphere(object): #S37
 
     def intersectionParameter(self, ray):
         co = self.center - ray.origin
-        v = co.dot(ray.direction)
-        discriminant = v*v - co.dot(co) + self.radius*self.radius
+        v = np.dot(co,ray.direction)
+        discriminant = v*v - np.dot(co,co) + self.radius*self.radius
         if discriminant < 0:
             return None
         else:
-            return v - math.sqrt(discriminant)
+            return v - np.sqrt(discriminant)
 
     def normalAt(self, p):
-        return (p-self.center).normalized()
+        tmp = (p-self.center)
+        return tmp/np.linalg.norm(tmp)
 
 
 
 class Plane(object): #S39
     def __init__(self, point, normal, color):
         self.point = point # point
-        self.normal = normal/np.linalg.norm(normal) #normal.normalized() #vector
+        self.normal = normal/linalg.norm(normal) #normal.normalized() #vector # removed np
 
         self.color = color
 
@@ -61,17 +62,18 @@ class Triangle(object):
 
     def intersectionParameter(self, ray):
         w = ray.origin - self.a
-        dv = ray.direction.cross(self.v)
-        dvu = dv.dot(self.u)
+        dv = np.cross(ray.direction, self.v)
+        dvu = np.dot(dv, self.u)
         if dvu == 0.0:
             return None
-        wu = w.cross(self.u)
-        r = dv.dot(w) / dvu
-        s = wu.dot(ray.direction) / dvu
+        wu = np.cross(w, self.u)
+        r = np.dot(dv, w) / dvu
+        s = np.dot(wu, ray.direction) / dvu
         if 0 <= r and r <= 1 and 0 <= s and s <= 1 and r+s <= 1:
-            return wu.dot(self.v) / dvu
+            return np.dot(wu, self.v) / dvu
         else:
             return None
 
     def normalAt(self, p):
-        return self.u.cross(self.v).normalized()
+        tmp = np.cross(self.u,self.v)
+        return tmp/np.linalg.norm(tmp)
