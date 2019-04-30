@@ -8,20 +8,26 @@ class Sphere(object): #S37
         self.color = color
 
     def __repr__(self):
-        return "Sphere(%s,%s)" %(repr(self.center), self.radius)
+        return "Sphere({},{})".format(repr(self.center), self.radius)
 
-    def intersectionParameter(self, ray):
+    def intersectionParamter(self, ray):
         co = self.center - ray.origin
-        v = np.dot(co,ray.direction)
-        discriminant = v*v - np.dot(co,co) + self.radius*self.radius
+        v = dot(co,ray.direction)
+        discriminant = v*v - dot(co,co) + self.radius*self.radius
         if discriminant < 0:
             return None
         else:
-            return v - np.sqrt(discriminant)
+            return v - sqrt(discriminant)
 
     def normalAt(self, p):
         tmp = (p-self.center)
-        return tmp/np.linalg.norm(tmp)
+        return tmp/linalg.norm(tmp)
+
+    def colorAt(self, ray):
+
+
+
+        return self.color
 
 
 
@@ -37,8 +43,8 @@ class Plane(object): #S39
 
     def intersectionParamter(self, ray):
         op = ray.origin - self.point
-        a = np.dot(op, self.normal)
-        b = np.dot(ray.direction, self.normal)
+        a = dot(op, self.normal)
+        b = dot(ray.direction, self.normal)
         if b:
             return (-a)/b
         else:
@@ -47,33 +53,44 @@ class Plane(object): #S39
     def normalAt(self, p):
         return self.normal
 
+    def colorAt(self, ray):
+        return self.color
+
+
 
 
 class Triangle(object):
-    def __init__(self, a, b, c):
+    def __init__(self, a, b, c, color):
         self.a = a #point
         self.b = b #point
         self.c = c #point
         self.u = self.b - self.a #direction vector
         self.v = self.c - self.a #direction vector
+        self.color = color
 
     def __repr__(self):
         return "Triangle(%s,%s,%s)" %(repr(self.a), repr(self.b), repr(self.c))
 
-    def intersectionParameter(self, ray):
+    def intersectionParamter(self, ray):
         w = ray.origin - self.a
-        dv = np.cross(ray.direction, self.v)
-        dvu = np.dot(dv, self.u)
+        dv = cross(ray.direction, self.v)
+        dvu = dot(dv, self.u)
+
         if dvu == 0.0:
             return None
-        wu = np.cross(w, self.u)
-        r = np.dot(dv, w) / dvu
-        s = np.dot(wu, ray.direction) / dvu
+
+        wu = cross(w, self.u)
+        r = dot(dv, w) / dvu
+        s = dot(wu, ray.direction) / dvu
+
         if 0 <= r and r <= 1 and 0 <= s and s <= 1 and r+s <= 1:
-            return np.dot(wu, self.v) / dvu
+            return dot(wu, self.v) / dvu
         else:
             return None
 
     def normalAt(self, p):
-        tmp = np.cross(self.u,self.v)
-        return tmp/np.linalg.norm(tmp)
+        tmp = cross(self.u,self.v)
+        return tmp/linalg.norm(tmp)
+
+    def colorAt(self, ray):
+        return self.color
