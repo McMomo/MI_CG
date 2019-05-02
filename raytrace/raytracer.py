@@ -5,103 +5,135 @@ import datetime
 from raytrace import objects
 
 BACKGROUND_COLOR = (0,0,0)
-WIDTH = 400
-HEIGHT = 400
+WIDTH = 0
+HEIGHT = 0
 
 image = None
-camera = []
+camera = None
 lights = []
 
-class Ray(object): #S30
-    def __init__(self, origin, direction):
-        self.origin = origin # point
-        self.direction = direction/ linalg.norm(direction) #vector
+maxlevel = 3
 
-    def __repr__(self):
-        return "Ray(%s,%s)" %(repr(self.origin), repr(self.direction))
+class Camera(object):
+    def __init__(self, e, up, c, fov, res):
+        global HEIGHT, WIDTH
 
-    def pointAtParameter(self, t):
-        return self.origin + multiply(self.direction,t)
+        self.e = e
+        self.up = up
+        self.c = c
+        self.fov = fov
+        self.res = res
 
-
-def calcRay(width, height): #S33
-    global camera
-
-    f = camera[1] - camera[0]
-    f = f / linalg.norm(f)
-
-    s = cross(f, camera[2])
-    s = s / linalg.norm(s)
-
-    u = cross(s, f)
-
-    pixelWidth = width / (WIDTH-1)
-    pixelHeight = height /(HEIGHT-1)
-
-    for y in range(HEIGHT):
-        for x in range(WIDTH):
-
-            xcomp = multiply(s,(x*pixelWidth - width/2))
-            ycomp = multiply(u,(y*pixelHeight - height/2))
-            ray = Ray(camera[0], f + xcomp + ycomp) # evtl. mehrere Strahlen pro Pixel
-
-            return ray
+        self.f = c - e / linalg.norm(c - e)
+        self.s = cross(self.f , up) / linalg.norm(cross(self.f , up))
+        self.u = cross(self.s, self.f)
 
 
+        self.aspectratio = res/res
+        self.alpha = fov/2
+        HEIGHT = 2*tan(self.alpha)
+        WIDTH = self.aspectratio * HEIGHT
 
-def rayCasting(imageWidth, imageHeight): #S31
+
+def calcRay(x, y): #S33
+    global camera, WIDTH, HEIGHT
+    pixelWidth = WIDTH/ (camera.res-1)
+    pixelHeight = HEIGHT /(camera.res -1)
+    xcomp = multiply(camera.s,(x*pixelWidth - WIDTH/2))
+    ycomp = multiply(camera.u,(y*pixelHeight - HEIGHT/2))
+    return objects.Ray(camera.e, camera.f + xcomp + ycomp) # evtl. mehrere Strahlen pro Pixel
 
 
+def rayCasting(imageWidth, imageHeight):
     for x in range(imageWidth):
         for y in range(imageHeight):
             ray = calcRay(x,y)
-            maxdist = 5 #float('inf')
+            maxdist =  float('inf')
             color = BACKGROUND_COLOR
             for object in objectlist:
-
                 hitdist = object.intersectionParamter(ray)
                 if hitdist:
-                    if hitdist < maxdist:
+                    if .001 < hitdist < maxdist:
                         maxdist = hitdist
                         color = object.colorAt(ray)
-
             image.putpixel((x,y), color)
+
+
 
 
 def rayTracing():
     for x in range(WIDTH):
         for y in range(HEIGHT):
             ray = calcRay(x, y) # cameraParamter in glob camera
-            #TODO implement raytracing from S.47
+            color = traceRay(0, ray)
+            image.putpixel((x,y), color)
+
+
+def traceRay(level, ray):
+    hitPointData = intersect(level, ray, maxlevel) # maxLevel = maximale Rekursions-Tiefe
+    if hitPointData:
+        return shade(level, hitPointData)
+    return BACKGROUND_COLOR
+
+
+def shade(level, hitPointData):
+    directColor = computeDirectLight(hitPointData)
+
+    reflcetedRay = computeReflectedRay(hitPointData)
+    reflcetedColor = traceRay(level+1, reflcetedRay)
+
+    return directColor + reflection*reflcetedColor
+
+def intersect(level, ray, maxlevel):
+    if level >= maxlevel:
+        return None
+
+    maxdist = float('inf')
+    hitPointData = None
+
+    for o in objects:
+        hitdist = o.intersectParameter
+        if hitdist and hitdist >= 0:
+            if hitdist < maxdist:
+                maxdist = hitdist
+                hitPointData = o.colorAt(ray)
+
+    return hitPointData
 
 
 if __name__ == "__main__":
     if len(sys.argv) <= 1 :
         sys.exit(1) #TODO error msg.
-    elif len(sys.argv) >= 3:
-         HEIGHT = sys.argv[2]
-         WIDTH = sys.argv[3]
 
     if int(sys.argv[1]) == 1:
         print("Default Picture, start process ...")
 
+        up = array([0,1,0])
+        radius = 30
+        side = 40
+        top = 1.75 * side
+        z = 500
 
-        #TODO Vektor punkte von Hennock einsetzten
+        res = 200
+        fov = 45
+
         objectlist = [
-            objects.Plane(array([0, HEIGHT/-1, 0]), array([0, HEIGHT/1, 0]), (128, 128, 128,)),
-            objects.Sphere(array([HEIGHT/-2, HEIGHT/1.5, HEIGHT/-2]), HEIGHT/1.5,  (0, 255, 0)),
-            objects.Sphere(array([HEIGHT/2, HEIGHT/1.5, HEIGHT/-2]), HEIGHT/1.5,  (255, 0, 0)),
-            objects.Sphere(array([0, HEIGHT/4.5, HEIGHT/-2]), HEIGHT/1.5,  (0, 0, 255)),
-            objects.Triangle(array([HEIGHT/-2, HEIGHT/1.5, HEIGHT/-2]), array([ HEIGHT/2, HEIGHT/1.5, HEIGHT/-2]), array([ 0, HEIGHT/4.5, HEIGHT/-2]),  (255, 255, 0))
+            objects.Plane(array([0,0,0]), up, (128, 128, 128)),
+            objects.Sphere(array([0, top, z]), radius, (0, 255, 0)),
+            objects.Sphere(array([-side, 0, z]), radius, (255, 0, 0)),
+            objects.Sphere(array([side, 0, z]), radius, (0, 0, 255)),
+            objects.Triangle(array([0, top, z]), array([side, 0, z-20]), array([-side, 0, z -20]), (255, 255, 0))
+
         ]
 
-        lights = [array([30,30,10]), (255,255,255)]
-
-        camera = [array([0,1.8,10]),array([0,3,0]), array([0,1,0]), 45] #e, c, up, fov
 
 
-        image = Image.new("RGB", (HEIGHT, WIDTH))
-        rayCasting(WIDTH, HEIGHT)
+        lights = [array([40,200,0]), (255,255,255)]
+
+        camera = Camera(array([0,50,0]), up, array([0,top/2, z]), fov, res) # war e, c, up ist e, up c
+
+        image = Image.new("RGB", (res, res))
+        rayCasting(res, res)
         image.save('./out.png')
 
         print("... finish.")

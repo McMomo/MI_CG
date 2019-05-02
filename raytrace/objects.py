@@ -1,5 +1,19 @@
 from numpy import *
 
+
+class Ray(object): #S30
+    def __init__(self, origin, direction):
+        self.origin = origin # point
+        self.direction = direction/ linalg.norm(direction) #vector
+
+    def __repr__(self):
+        return "Ray({},{})".format(repr(self.origin), repr(self.direction))
+
+    def pointAtParameter(self, t):
+        return self.origin + multiply(self.direction,t)
+
+
+
 class Sphere(object): #S37
     def __init__(self, center, radius, color):
         self.center = center #point
@@ -54,6 +68,7 @@ class Plane(object): #S39
         return self.normal
 
     def colorAt(self, ray):
+
         return self.color
 
 
