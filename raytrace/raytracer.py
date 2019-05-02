@@ -34,6 +34,21 @@ class Camera(object):
         HEIGHT = 2*tan(self.alpha)
         WIDTH = self.aspectratio * HEIGHT
 
+class Ray(object): #S30
+    def __init__(self, origin, direction):
+        self.origin = origin # point
+        self.direction = direction/ linalg.norm(direction) #vector
+
+    def __repr__(self):
+        return "Ray({},{})".format(repr(self.origin), repr(self.direction))
+
+    def pointAtParameter(self, t):
+        return self.origin + multiply(self.direction,t)
+
+    def reflect(self, vec, other):
+        other = other / linalg.norm(other)
+        return  vec - 2 * (vec * other) * other
+
 
 def calcRay(x, y): #S33
     global camera, WIDTH, HEIGHT
@@ -41,8 +56,9 @@ def calcRay(x, y): #S33
     pixelHeight = HEIGHT /(camera.res -1)
     xcomp = multiply(camera.s,(x*pixelWidth - WIDTH/2))
     ycomp = multiply(camera.u,(y*pixelHeight - HEIGHT/2))
-    return objects.Ray(camera.e, camera.f + xcomp + ycomp) # evtl. mehrere Strahlen pro Pixel
+    return Ray(camera.e, camera.f + xcomp + ycomp) # evtl. mehrere Strahlen pro Pixel
 
+################################################
 
 def rayCasting(imageWidth, imageHeight):
     for x in range(imageWidth):
@@ -58,14 +74,14 @@ def rayCasting(imageWidth, imageHeight):
                         color = object.colorAt(ray)
             image.putpixel((x,y), color)
 
-
+###############################################
 
 
 def rayTracing():
-    for x in range(WIDTH):
-        for y in range(HEIGHT):
+    for x in range(res):
+        for y in range(res):
             ray = calcRay(x, y) # cameraParamter in glob camera
-            color = traceRay(0, ray)
+            color = tuple(int(f) for f in traceRay(0, ray))
             image.putpixel((x,y), color)
 
 
@@ -82,7 +98,42 @@ def shade(level, hitPointData):
     reflcetedRay = computeReflectedRay(hitPointData)
     reflcetedColor = traceRay(level+1, reflcetedRay)
 
-    return directColor + reflection*reflcetedColor
+    return directColor + reflcetedColor
+
+def computeReflectedRay(hitPointData):
+    ray, obj, hitdist, level = hitPointData
+
+    intersectionPt = ray.pointAtParameter(hitdist)
+    objColor = obj.colorAt()
+
+    # specualr (reflective) light
+    reflectedRay = Ray(intersectionPt,
+                       ray.reflect(ray.direction, objColor) / linalg.norm(ray.reflect(ray.direction, objColor)))
+
+    print("ReflectedRay:", reflectedRay)
+    return reflectedRay
+
+def computeDirectLight(hitPointData):
+    ray, obj, hitdist, level = hitPointData
+
+    color = (0,0,0)
+
+    intersectionPt = ray.pointAtParameter(hitdist)
+    objColor = obj.colorAt()
+
+    #ambient light
+    color += multiply(obj.material.color ,obj.material.ambient)
+
+    #lambert shading
+    for light in lights:
+        ptTpLiVec = (light - intersectionPt) / linalg.norm(light - intersectionPt)
+        ptToLiRay = Ray(intersectionPt, ptTpLiVec)
+        if intersect(0, ptToLiRay, maxlevel) is None:
+            lambertIntensity = objColor * ptTpLiVec
+            if lambertIntensity.any(): # > 0:
+                color += obj.material.color * obj.material.lambert * lambertIntensity
+    print("Directlight: ", color)
+    return color
 
 def intersect(level, ray, maxlevel):
     if level >= maxlevel:
@@ -91,12 +142,12 @@ def intersect(level, ray, maxlevel):
     maxdist = float('inf')
     hitPointData = None
 
-    for o in objects:
-        hitdist = o.intersectParameter
+    for obj in objectlist:
+        hitdist = obj.intersectionParamter(ray)
         if hitdist and hitdist >= 0:
-            if hitdist < maxdist:
+            if .001 < hitdist < maxdist:
                 maxdist = hitdist
-                hitPointData = o.colorAt(ray)
+                hitPointData = ray, obj, hitdist, level
 
     return hitPointData
 
@@ -118,23 +169,26 @@ if __name__ == "__main__":
         fov = 45
 
         objectlist = [
-            objects.Plane(array([0,0,0]), up, (128, 128, 128)),
-            objects.Sphere(array([0, top, z]), radius, (0, 255, 0)),
-            objects.Sphere(array([-side, 0, z]), radius, (255, 0, 0)),
-            objects.Sphere(array([side, 0, z]), radius, (0, 0, 255)),
-            objects.Triangle(array([0, top, z]), array([side, 0, z-20]), array([-side, 0, z -20]), (255, 255, 0))
+            objects.Plane(array([0,0,0]), up, objects.Material((128, 128, 128))),
+            objects.Sphere(array([0, top, z]), radius, objects.Material((0, 255, 0))),
+            objects.Sphere(array([-side, 0, z]), radius, objects.Material((255, 0, 0))),
+            objects.Sphere(array([side, 0, z]), radius, objects.Material((0, 0, 255))),
+            objects.Triangle(array([0, top, z]), array([side, 0, z-20]), array([-side, 0, z -20]), objects.Material((255, 255, 0)))
 
         ]
 
 
 
-        lights = [array([40,200,0]), (255,255,255)]
+        lights = [array([40,200,0])]
 
         camera = Camera(array([0,50,0]), up, array([0,top/2, z]), fov, res) # war e, c, up ist e, up c
 
         image = Image.new("RGB", (res, res))
-        rayCasting(res, res)
-        image.save('./out.png')
+
+        #rayCasting(res, res)
+        rayTracing()
+
+        image.save('./out1.png')
 
         print("... finish.")
 

@@ -1,25 +1,19 @@
 from numpy import *
 
 
-class Ray(object): #S30
-    def __init__(self, origin, direction):
-        self.origin = origin # point
-        self.direction = direction/ linalg.norm(direction) #vector
-
-    def __repr__(self):
-        return "Ray({},{})".format(repr(self.origin), repr(self.direction))
-
-    def pointAtParameter(self, t):
-        return self.origin + multiply(self.direction,t)
-
-
+class Material:
+    def __init__(self, color, specular=0.5, lambert=1, ambient=0.2):
+        self.color = color
+        self.specular = specular
+        self.lambert = lambert
+        self.ambient = ambient
 
 class Sphere(object): #S37
-    def __init__(self, center, radius, color):
+    def __init__(self, center, radius, material):
         self.center = center #point
         self.radius = radius #scalar
 
-        self.color = color
+        self.material = material
 
     def __repr__(self):
         return "Sphere({},{})".format(repr(self.center), self.radius)
@@ -37,20 +31,20 @@ class Sphere(object): #S37
         tmp = (p-self.center)
         return tmp/linalg.norm(tmp)
 
-    def colorAt(self, ray):
+    def colorAt(self):
 
 
 
-        return self.color
+        return self.material.color
 
 
 
 class Plane(object): #S39
-    def __init__(self, point, normal, color):
+    def __init__(self, point, normal, material):
         self.point = point # point
         self.normal = normal/linalg.norm(normal) #normal.normalized() #vector # removed np
 
-        self.color = color
+        self.material = material
 
     def __repr__(self):
         return "Plane(%s,%s)" %(repr(self.point), repr(self.normal))
@@ -67,21 +61,21 @@ class Plane(object): #S39
     def normalAt(self, p):
         return self.normal
 
-    def colorAt(self, ray):
+    def colorAt(self):
 
-        return self.color
+        return self.material.color
 
 
 
 
 class Triangle(object):
-    def __init__(self, a, b, c, color):
+    def __init__(self, a, b, c, material):
         self.a = a #point
         self.b = b #point
         self.c = c #point
         self.u = self.b - self.a #direction vector
         self.v = self.c - self.a #direction vector
-        self.color = color
+        self.material = material
 
     def __repr__(self):
         return "Triangle(%s,%s,%s)" %(repr(self.a), repr(self.b), repr(self.c))
@@ -107,5 +101,5 @@ class Triangle(object):
         tmp = cross(self.u,self.v)
         return tmp/linalg.norm(tmp)
 
-    def colorAt(self, ray):
-        return self.color
+    def colorAt(self):
+        return self.material.color
