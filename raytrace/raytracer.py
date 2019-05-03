@@ -96,7 +96,7 @@ def shade(level, hitPointData):
     directColor = computeDirectLight(hitPointData)
 
     reflcetedRay = computeReflectedRay(hitPointData)
-    reflcetedColor = traceRay(level+1, reflcetedRay)
+    reflcetedColor = multiply(traceRay(level+1, reflcetedRay), 0.2)
 
     return directColor + reflcetedColor
 
@@ -150,7 +150,7 @@ def intersect(level, ray, maxlevel):
     for obj in objectlist:
         hitdist = obj.intersectionParamter(ray)
         if hitdist and hitdist >= 0:
-            if .001 < hitdist < maxdist:
+            if .0001 < hitdist < maxdist:
                 maxdist = hitdist
                 hitPointData = ray, obj, hitdist, level
 
@@ -165,27 +165,27 @@ if __name__ == "__main__":
         print("Default Picture, start process ...")
 
         up = array([0,-1,0])
-        radius = 30
-        side = 40
+        radius = 60
+        side = 70
         top = 1.75 * side
         z = 500
 
-        res = 400
+        res = 200
         fov = 45
 
         objectlist = [
             objects.Plane(array([0,0,0]), up, objects.Material((128, 128, 128))),
-            objects.Sphere(array([0, top, z]), radius, objects.Material((0, 255, 0))),
-            objects.Sphere(array([-side, 0, z]), radius, objects.Material((255, 0, 0))),
-            objects.Sphere(array([side, 0, z]), radius, objects.Material((0, 0, 255))),
-            objects.Triangle(array([0, top, z+100]), array([side, 0, z+100]), array([-side, 0, z+100]), objects.Material((255, 255, 0)))
+            objects.Sphere(array([0, top, z-100]), radius, objects.Material((0, 0, 255))),
+            objects.Sphere(array([-side, 0, z-100]), radius, objects.Material((0, 255, 0))),
+            objects.Sphere(array([side, 0, z-100]), radius, objects.Material((255, 0, 0))),
+            objects.Triangle(array([0, top, z]), array([side, 0, z]), array([-side, 0, z]), objects.Material((255, 255, 0)))
         ]
 
 
 
-        lights = [array([40,200,0]), array([30,30,10]), up] #todo
+        lights = [array([100,200,0]),  array([100,0,z])] #array([0,40,200]),  array([-10,100,30]),  array([30,30,10]) #todo light find best setting
 
-        camera = Camera(array([0,50,0]), up, array([0,top/2, z]), fov, res) # e, up c
+        camera = Camera(array([0,50,0]), up, array([0,top/2, z]), fov, res) # e, up, c, fov, res
 
         image = Image.new("RGB", (res, res))
 
