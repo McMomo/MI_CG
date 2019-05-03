@@ -5,8 +5,7 @@ import datetime
 from raytrace import objects
 
 BACKGROUND_COLOR = (0,0,0)
-WIDTH = 0
-HEIGHT = 0
+
 
 image = None
 camera = None
@@ -14,9 +13,9 @@ lights = []
 
 maxlevel = 3
 
+
 class Camera(object):
     def __init__(self, e, up, c, fov, res):
-        global HEIGHT, WIDTH
 
         self.e = e
         self.up = up
@@ -28,11 +27,11 @@ class Camera(object):
         self.s = cross(self.f , up) / linalg.norm(cross(self.f , up))
         self.u = cross(self.s, self.f)
 
-
         self.aspectratio = res/res
         self.alpha = fov/2
-        HEIGHT = 2*tan(self.alpha)
-        WIDTH = self.aspectratio * HEIGHT
+        self.height = 2 * tan(self.alpha)
+        self.width = self.aspectratio * self.height
+
 
 class Ray(object):
     def __init__(self, origin, direction):
@@ -50,34 +49,24 @@ class Ray(object):
         return  self.direction - multiply(2, multiply(multiply(self.direction, other),other))
 
 
+def render():
+    for x in range(res):
+        for y in range(res):
+            ray = calcRay(x, y) # cameraParamter in glob camera
+            color = tuple(int(f) for f in traceRay(0, ray))
+            image.putpixel((x, y), color)
+
+
 def calcRay(x, y): #S33
-    global camera, WIDTH, HEIGHT
-    pixelWidth = WIDTH/ (camera.res-1)
-    pixelHeight = HEIGHT /(camera.res -1)
-    xcomp = multiply(camera.s,(x*pixelWidth - WIDTH/2))
-    ycomp = multiply(camera.u,(y*pixelHeight - HEIGHT/2))
+    global camera
+    pixelWidth = camera.width / (camera.res - 1)
+    pixelHeight = camera.height / (camera.res - 1)
+    xcomp = multiply(camera.s, (x * pixelWidth - camera.width / 2))
+    ycomp = multiply(camera.u, (y * pixelHeight - camera.height / 2))
     return Ray(camera.e, camera.f + xcomp + ycomp) # evtl. mehrere Strahlen pro Pixel
 
-################################################
 
-def rayCasting(imageWidth, imageHeight):
-    for x in range(imageWidth):
-        for y in range(imageHeight):
-            ray = calcRay(x,y)
-            maxdist =  float('inf')
-            color = BACKGROUND_COLOR
-            for object in objectlist:
-                hitdist = object.intersectionParamter(ray)
-                if hitdist:
-                    if .001 < hitdist < maxdist:
-                        maxdist = hitdist
-                        color = object.colorAt(ray)
-            image.putpixel((x,y), color)
-
-###############################################
-
-
-def rayTracing():
+def render():
     for x in range(res):
         for y in range(res):
             ray = calcRay(x, y) # cameraParamter in glob camera
@@ -93,37 +82,37 @@ def traceRay(level, ray):
 
 
 def shade(level, hitPointData):
+    ray, obj, hitdist, level = hitPointData
     directColor = computeDirectLight(hitPointData)
 
-    reflcetedRay = computeReflectedRay(hitPointData)
-    reflcetedColor = multiply(traceRay(level+1, reflcetedRay), 0.2)
+    if obj.material.reflective == True:
+        reflcetedRay = computeReflectedRay(hitPointData)
+        reflcetedColor = multiply(traceRay(level+1, reflcetedRay), obj.material.ambient)
+    else:
+        reflcetedColor = array([0,0,0])
 
     return directColor + reflcetedColor
 
+
 def computeReflectedRay(hitPointData):
     ray, obj, hitdist, level = hitPointData
-
     intersectionPt = ray.pointAtParameter(hitdist)
-
     surfaceNorm = obj.normalAt(intersectionPt)
 
     # specualr (reflective) light
     reflectedRay = Ray(intersectionPt,
                        ray.reflect(surfaceNorm) / linalg.norm(ray.reflect(surfaceNorm)))
-
     return reflectedRay
+
 
 def computeDirectLight(hitPointData):
     ray, obj, hitdist, level = hitPointData
-
     color = (0,0,0)
-
     intersectionPt = ray.pointAtParameter(hitdist)
     surfaceNorm = obj.normalAt(intersectionPt)
 
     #ambient light
     color = multiply(obj.material.color ,obj.material.ambient)
-
 
     #lambert shading
     for light in lights:
@@ -132,12 +121,11 @@ def computeDirectLight(hitPointData):
         hitPointData = None
         hitPointData = intersect(0, ptToLiRay, maxlevel)
         if hitPointData is None:
-            #lambertIntensity = multiply(surfaceNorm, ptTpLiVec) # i do not want lamb..In.. to be a Vector. it should be a single number
-            lambertIntensity = surfaceNorm[0] * ptTpLiVec[0] + surfaceNorm[1] * ptTpLiVec[1] + surfaceNorm[2] * ptTpLiVec[2]
+            #lambertIntensity should be a single number
+            lambertIntensity = surfaceNorm[0]*ptTpLiVec[0] + surfaceNorm[1]*ptTpLiVec[1] + surfaceNorm[2]*ptTpLiVec[2]
 
             if lambertIntensity > 0:
                 color += multiply(multiply(obj.material.color, obj.material.lambert), lambertIntensity)
-
     return color
 
 def intersect(level, ray, maxlevel):
@@ -161,44 +149,59 @@ if __name__ == "__main__":
     if len(sys.argv) <= 1 :
         sys.exit(1) #TODO error msg.
 
-    if int(sys.argv[1]) == 1:
-        print("Default Picture, start process ...")
+    up = array([0, 1, 0])
+    radius = 60
+    side = 80
+    top = 1.75 * side
+    z = 500
+    res = 200
+    fov = -45
 
-        up = array([0,-1,0])
-        radius = 60
-        side = 70
-        top = 1.75 * side
-        z = 500
+    camera = Camera(array([0, 50, 0]), up, array([0, top / 2, z]), fov, res)  # e, up, c, fov, res
+    image = Image.new("RGB", (res, res))
 
-        res = 200
-        fov = 45
-
+    if sys.argv[1] == "light":
+        print("Image with light ...")
         objectlist = [
-            objects.Plane(array([0,0,0]), up, objects.Material((128, 128, 128))),
-            objects.Sphere(array([0, top, z-100]), radius, objects.Material((0, 0, 255))),
-            objects.Sphere(array([-side, 0, z-100]), radius, objects.Material((0, 255, 0))),
-            objects.Sphere(array([side, 0, z-100]), radius, objects.Material((255, 0, 0))),
-            objects.Triangle(array([0, top, z]), array([side, 0, z]), array([-side, 0, z]), objects.Material((255, 255, 0)))
+            objects.Plane(array([0, -top ,0]), up, objects.Material((128, 128, 128), False, False)),
+            objects.Sphere(array([0, top, z-radius]), radius, objects.Material((0, 0, 255), False, False)),
+            objects.Sphere(array([-side, 0, z-radius]), radius, objects.Material((0, 255, 0), False, False)),
+            objects.Sphere(array([side, 0, z-radius]), radius, objects.Material((255, 0, 0), False, False)),
+            objects.Triangle(array([0, top, z]), array([side, 0, z]), array([-side, 0, z]),
+                             objects.Material((255, 255, 0), False, False))
         ]
+        lights = [array([300,300,100])]
 
+    elif sys.argv[1] == "reflection":
+        print("Image with reflection ...")
+        objectlist = [
+            objects.Plane(array([0, -top, 0]), up, objects.Material((128, 128, 128), True, False)),
+            objects.Sphere(array([0, top, z - radius]), radius, objects.Material((0, 0, 255), True, False)),
+            objects.Sphere(array([-side, 0, z - radius]), radius, objects.Material((0, 255, 0), True, False)),
+            objects.Sphere(array([side, 0, z - radius]), radius, objects.Material((255, 0, 0), True, False)),
+            objects.Triangle(array([0, top, z]), array([side, 0, z]), array([-side, 0, z]),
+                             objects.Material((255, 255, 0), True, False))
+        ]
+        lights = [array([300, 300, 100])]
 
+    elif sys.argv[1] == "texture":
+        print("Image with texture ...")
+        objectlist = [
+            objects.Plane(array([0, -top, 0]), up, objects.Material((128, 128, 128), True, True)),
+            objects.Sphere(array([0, top, z - radius]), radius, objects.Material((0, 0, 255), True, False)),
+            objects.Sphere(array([-side, 0, z - radius]), radius, objects.Material((0, 255, 0), True, False)),
+            objects.Sphere(array([side, 0, z - radius]), radius, objects.Material((255, 0, 0), True, False)),
+            objects.Triangle(array([0, top, z]), array([side, 0, z]), array([-side, 0, z]),
+                             objects.Material((255, 255, 0), True, False))
+        ]
+        lights = [array([300, 300, 100]), array([-100, 1000, 300])]
 
-        lights = [array([100,200,0]),  array([100,0,z])] #array([0,40,200]),  array([-10,100,30]),  array([30,30,10]) #todo light find best setting
-
-        camera = Camera(array([0,50,0]), up, array([0,top/2, z]), fov, res) # e, up, c, fov, res
-
-        image = Image.new("RGB", (res, res))
-
-        #rayCasting(res, res)
-        rayTracing()
-
-        image.save('./result/result_{}.png'.format(datetime.datetime.now()))
-
-        print("... finish.")
-
-    elif int(sys.argv[1]) == 2:
-        print("Image with reflection")
-    elif int(sys.argv[1]) == 3:
-        print("Image with checker floor")
     else:
-        print("Which image do you want to see? \n1 == l. \t|\t 2 == m. \t|\t 3 == r")
+        print("Please add to the arguments \nlight \tOR\treflection \tOR\ttexture")
+        sys.exit(1)
+
+    # start raytracing
+    render()
+
+    image.save('./result/result_{}_{}.png'.format(sys.argv[1], datetime.datetime.now()))
+    print("... finish.")

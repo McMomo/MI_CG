@@ -2,11 +2,19 @@ from numpy import *
 
 
 class Material:
-    def __init__(self, color, specular=0.5, lambert=1, ambient=0.2):
+    def __init__(self, color, reflective, texture, specular=0.5, lambert=1, ambient=0.2):
         self.color = color
+        self.reflective = reflective
+        self.texture = texture
         self.specular = specular
         self.lambert = lambert
         self.ambient = ambient
+
+class CheckerboardMaterial:
+    def __init__(self, a, b, c):
+        self.baseColor = (1, 1, 1)
+        self.otherColor = (0, 0, 0)
+
 
 class Sphere(object): #S37
     def __init__(self, center, radius, material):
@@ -38,7 +46,7 @@ class Sphere(object): #S37
 class Plane(object): #S39
     def __init__(self, point, normal, material):
         self.point = point # point
-        self.normal = normal/linalg.norm(normal) #normal.normalized() #vector # removed np
+        self.normal = normal /linalg.norm(normal) #normal.normalized() #vector # removed np
 
         self.material = material
 
