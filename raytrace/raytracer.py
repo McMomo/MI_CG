@@ -24,7 +24,7 @@ class Camera(object):
         self.fov = fov
         self.res = res
 
-        self.f = c - e / linalg.norm(c - e)
+        self.f = (c - e) / linalg.norm(c - e)
         self.s = cross(self.f , up) / linalg.norm(cross(self.f , up))
         self.u = cross(self.s, self.f)
 
@@ -82,7 +82,7 @@ def rayTracing():
         for y in range(res):
             ray = calcRay(x, y) # cameraParamter in glob camera
             color = tuple(int(f) for f in traceRay(0, ray))
-            image.putpixel((x,y), color)
+            image.putpixel((x, y), color)
 
 
 def traceRay(level, ray):
@@ -181,14 +181,13 @@ if __name__ == "__main__":
             objects.Sphere(array([-side, 0, z]), radius, objects.Material((255, 0, 0))),
             objects.Sphere(array([side, 0, z]), radius, objects.Material((0, 0, 255))),
             objects.Triangle(array([0, top, z]), array([side, 0, z-20]), array([-side, 0, z -20]), objects.Material((255, 255, 0)))
-
         ]
 
 
 
         lights = [array([40,200,0])]
 
-        camera = Camera(array([0,50,0]), up, array([0,top/2, z]), fov, res) # war e, c, up ist e, up c
+        camera = Camera(array([0,50,0]), up, array([0,top/2, z]), fov, res) # e, up c
 
         image = Image.new("RGB", (res, res))
 
