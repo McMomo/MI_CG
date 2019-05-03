@@ -45,9 +45,9 @@ class Ray(object):
     def pointAtParameter(self, t):
         return self.origin + multiply(self.direction,t)
 
-    def reflect(self, vec, other):
+    def reflect(self, other):
         other = other / linalg.norm(other)
-        return  vec - multiply(2, multiply(multiply(vec, other),other))
+        return  self.direction - multiply(2, multiply(multiply(self.direction, other),other))
 
 
 def calcRay(x, y): #S33
@@ -109,7 +109,7 @@ def computeReflectedRay(hitPointData):
 
     # specualr (reflective) light
     reflectedRay = Ray(intersectionPt,
-                       ray.reflect(ray.direction, surfaceNorm) / linalg.norm(ray.reflect(ray.direction, surfaceNorm)))
+                       ray.reflect(surfaceNorm) / linalg.norm(ray.reflect(surfaceNorm)))
 
     return reflectedRay
 
@@ -119,8 +119,6 @@ def computeDirectLight(hitPointData):
     color = (0,0,0)
 
     intersectionPt = ray.pointAtParameter(hitdist)
-    #intersectionPt = intersectionPt / linalg.norm(intersectionPt) # lieber nicht normalisieren
-    #objColor = array(obj.colorAt()) #TODO objColor != surface nrom
     surfaceNorm = obj.normalAt(intersectionPt)
 
     #ambient light
@@ -166,13 +164,13 @@ if __name__ == "__main__":
     if int(sys.argv[1]) == 1:
         print("Default Picture, start process ...")
 
-        up = array([0,1,0])
+        up = array([0,-1,0])
         radius = 30
         side = 40
         top = 1.75 * side
         z = 500
 
-        res = 200
+        res = 400
         fov = 45
 
         objectlist = [
@@ -180,12 +178,12 @@ if __name__ == "__main__":
             objects.Sphere(array([0, top, z]), radius, objects.Material((0, 255, 0))),
             objects.Sphere(array([-side, 0, z]), radius, objects.Material((255, 0, 0))),
             objects.Sphere(array([side, 0, z]), radius, objects.Material((0, 0, 255))),
-            objects.Triangle(array([0, top, z]), array([side, 0, z-20]), array([-side, 0, z -20]), objects.Material((255, 255, 0)))
+            objects.Triangle(array([0, top, z+100]), array([side, 0, z+100]), array([-side, 0, z+100]), objects.Material((255, 255, 0)))
         ]
 
 
 
-        lights = [array([40,200,0])]
+        lights = [array([40,200,0]), array([30,30,10]), up] #todo
 
         camera = Camera(array([0,50,0]), up, array([0,top/2, z]), fov, res) # e, up c
 
