@@ -34,10 +34,10 @@ class Camera(object):
         HEIGHT = 2*tan(self.alpha)
         WIDTH = self.aspectratio * HEIGHT
 
-class Ray(object): #S30
+class Ray(object):
     def __init__(self, origin, direction):
         self.origin = origin # point
-        self.direction = direction/ linalg.norm(direction) #vector
+        self.direction = direction/linalg.norm(direction) #vector
 
     def __repr__(self):
         return "Ray({},{})".format(repr(self.origin), repr(self.direction))
@@ -47,7 +47,7 @@ class Ray(object): #S30
 
     def reflect(self, vec, other):
         other = other / linalg.norm(other)
-        return  vec - 2 * (vec * other) * other
+        return  vec - multiply(2, multiply(multiply(vec, other),other))
 
 
 def calcRay(x, y): #S33
@@ -87,7 +87,7 @@ def rayTracing():
 
 def traceRay(level, ray):
     hitPointData = intersect(level, ray, maxlevel) # maxLevel = maximale Rekursions-Tiefe
-    if hitPointData:
+    if hitPointData is not None:
         return shade(level, hitPointData)
     return BACKGROUND_COLOR
 
@@ -104,13 +104,13 @@ def computeReflectedRay(hitPointData):
     ray, obj, hitdist, level = hitPointData
 
     intersectionPt = ray.pointAtParameter(hitdist)
-    objColor = obj.colorAt()
+
+    surfaceNorm = obj.normalAt(intersectionPt)
 
     # specualr (reflective) light
     reflectedRay = Ray(intersectionPt,
-                       ray.reflect(ray.direction, objColor) / linalg.norm(ray.reflect(ray.direction, objColor)))
+                       ray.reflect(ray.direction, surfaceNorm) / linalg.norm(ray.reflect(ray.direction, surfaceNorm)))
 
-    print("ReflectedRay:", reflectedRay)
     return reflectedRay
 
 def computeDirectLight(hitPointData):
@@ -119,20 +119,27 @@ def computeDirectLight(hitPointData):
     color = (0,0,0)
 
     intersectionPt = ray.pointAtParameter(hitdist)
-    objColor = obj.colorAt()
+    #intersectionPt = intersectionPt / linalg.norm(intersectionPt) # lieber nicht normalisieren
+    #objColor = array(obj.colorAt()) #TODO objColor != surface nrom
+    surfaceNorm = obj.normalAt(intersectionPt)
 
     #ambient light
-    color += multiply(obj.material.color ,obj.material.ambient)
+    color = multiply(obj.material.color ,obj.material.ambient)
+
 
     #lambert shading
     for light in lights:
         ptTpLiVec = (light - intersectionPt) / linalg.norm(light - intersectionPt)
         ptToLiRay = Ray(intersectionPt, ptTpLiVec)
-        if intersect(0, ptToLiRay, maxlevel) is None:
-            lambertIntensity = objColor * ptTpLiVec
-            if lambertIntensity.any(): # > 0:
-                color += obj.material.color * obj.material.lambert * lambertIntensity
-    print("Directlight: ", color)
+        hitPointData = None
+        hitPointData = intersect(0, ptToLiRay, maxlevel)
+        if hitPointData is None:
+            #lambertIntensity = multiply(surfaceNorm, ptTpLiVec) # i do not want lamb..In.. to be a Vector. it should be a single number
+            lambertIntensity = surfaceNorm[0] * ptTpLiVec[0] + surfaceNorm[1] * ptTpLiVec[1] + surfaceNorm[2] * ptTpLiVec[2]
+
+            if lambertIntensity > 0:
+                color += multiply(multiply(obj.material.color, obj.material.lambert), lambertIntensity)
+
     return color
 
 def intersect(level, ray, maxlevel):
@@ -188,7 +195,7 @@ if __name__ == "__main__":
         #rayCasting(res, res)
         rayTracing()
 
-        image.save('./out1.png')
+        image.save('./result/result_{}.png'.format(datetime.datetime.now()))
 
         print("... finish.")
 

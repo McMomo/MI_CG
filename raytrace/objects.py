@@ -32,11 +32,7 @@ class Sphere(object): #S37
         return tmp/linalg.norm(tmp)
 
     def colorAt(self):
-
-
-
         return self.material.color
-
 
 
 class Plane(object): #S39
