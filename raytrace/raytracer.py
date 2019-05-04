@@ -43,10 +43,6 @@ class Ray(object):
     def pointAtParameter(self, t):
         return self.origin + multiply(self.direction,t)
 
-    def reflect(self, other): #TODO compare with others
-        other = other / linalg.norm(other)
-        return  self.direction - multiply(2, multiply(multiply(self.direction, other),other))
-
 
 def render():
     for x in range(res):
@@ -76,7 +72,7 @@ def shade(level, hitPointData):
     ray, obj, hitdist, level = hitPointData
     directColor = computeDirectLight(hitPointData)
 
-    # if not reflective return black
+    # get reflection
     if obj.material.reflective == True:
         reflcetedRay = computeReflectedRay(hitPointData)
         reflcetedColor = multiply(traceRay(level+1, reflcetedRay), obj.material.ambient)
@@ -87,14 +83,15 @@ def shade(level, hitPointData):
 
 
 def computeReflectedRay(hitPointData):
-    ray, obj, hitdist, level = hitPointData
-    intersectionPt = ray.pointAtParameter(hitdist)
-    surfaceNorm = obj.normalAt(intersectionPt)
-
     # specualr (reflective) light
-    reflectedRay = Ray(intersectionPt,
-                       ray.reflect(surfaceNorm) / linalg.norm(ray.reflect(surfaceNorm)))
-    return reflectedRay
+    ray, obj, hitdist, level = hitPointData
+
+    origin = ray.pointAtParameter(hitdist)
+    origin += obj.normalAt(origin)
+    d = ray.direction
+    n = obj.normalAt(origin)
+    newDirection = d - (2 * dot(n, d) * n)
+    return Ray(origin, newDirection)
 
 
 def computeDirectLight(hitPointData):
@@ -121,7 +118,6 @@ def computeDirectLight(hitPointData):
         if hitPointData is None:
             #lambertIntensity should be a single number
             lambertIntensity = surfaceNorm[0]*ptTpLiVec[0] + surfaceNorm[1]*ptTpLiVec[1] + surfaceNorm[2]*ptTpLiVec[2]
-
             if lambertIntensity > 0:
                 color += multiply(multiply(obj.material.color, obj.material.lambert), lambertIntensity)
     return color
@@ -147,7 +143,7 @@ if __name__ == "__main__":
     if len(sys.argv) <= 1 :
         sys.exit(1) #TODO error msg.
 
-    res = 800
+    res = 200
 
     up = array([0, 1, 0])
     radius = 60
@@ -201,5 +197,5 @@ if __name__ == "__main__":
     # start raytracing
     render()
 
-    image.save('./result/result_{}_{}.png'.format(sys.argv[1], datetime.datetime.now()))
+    image.save('./result/{}_{}.png'.format(sys.argv[1], datetime.datetime.now()))
     print("... finish.")
