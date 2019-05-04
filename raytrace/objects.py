@@ -2,7 +2,7 @@ from numpy import *
 
 
 class Material:
-    def __init__(self, color, reflective, texture, specular=0.5, lambert=1, ambient=0.2):
+    def __init__(self, color, reflective=False, texture=None, specular=0.5, lambert=1, ambient=0.5):
         self.color = color
         self.reflective = reflective
         self.texture = texture
@@ -11,12 +11,19 @@ class Material:
         self.ambient = ambient
 
 class CheckerboardMaterial:
-    def __init__(self, a, b, c):
-        self.baseColor = (1, 1, 1)
-        self.otherColor = (0, 0, 0)
+    def __init__(self, baseColor = (255, 255, 255), otherColor = (0, 0, 0), checkSize = 5):
+        self.baseColor = baseColor
+        self.otherColor = otherColor
+        self.checkSize = checkSize
 
+    def baseColorAt(self, p):
+        v = p
+        v = multiply(v, (0.1/self.checkSize))
+        if (int(abs(v[0])+0.5) + int(abs(v[1])+0.5) + int(abs(v[2])+0.5)) %2:
+            return self.otherColor
+        return self.baseColor
 
-class Sphere(object): #S37
+class Sphere(object):
     def __init__(self, center, radius, material):
         self.center = center #point
         self.radius = radius #scalar
@@ -43,10 +50,10 @@ class Sphere(object): #S37
         return self.material.color
 
 
-class Plane(object): #S39
+class Plane(object):
     def __init__(self, point, normal, material):
         self.point = point # point
-        self.normal = normal /linalg.norm(normal) #normal.normalized() #vector # removed np
+        self.normal = normal /linalg.norm(normal)
 
         self.material = material
 
@@ -82,7 +89,7 @@ class Triangle(object):
         self.material = material
 
     def __repr__(self):
-        return "Triangle(%s,%s,%s)" %(repr(self.a), repr(self.b), repr(self.c))
+        return "Triangle({},{},{})".format(repr(self.a), repr(self.b), repr(self.c))
 
     def intersectionParamter(self, ray):
         w = ray.origin - self.a
