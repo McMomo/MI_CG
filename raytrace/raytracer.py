@@ -1,7 +1,6 @@
-import sys
+import sys, datetime, threading
 from numpy import *
 from PIL import Image
-import datetime
 from raytrace import objects
 
 BACKGROUND_COLOR = (0,0,0)
@@ -44,7 +43,35 @@ class Ray(object):
         return self.origin + multiply(self.direction,t)
 
 
+def render_thread(t, resParts):
+    print(range(int(t * resParts)), " thread starts ...")
+    for x in range(int(t * resParts)):
+        for y in range(res):
+            ray = calcRay(x, y)
+            color = tuple(int(f) for f in traceRay(0, ray))
+            image.putpixel((x, y), color)
+    return
+
 def render():
+    '''
+    threadCount = 4
+    resParts = res/threadCount
+
+    # add all threads
+    threads = []
+    for t in range(1, threadCount+1):
+        threads.append(threading.Thread(target=render_thread, args=(t, resParts,)))
+
+    # start all threads
+    for x in threads:
+        x.daemon = True
+        x.start()
+
+    # wait till all threads finished
+    for x in threads:
+        x.join()
+
+    '''
     for x in range(res):
         for y in range(res):
             ray = calcRay(x, y)
@@ -121,6 +148,7 @@ def computeDirectLight(hitPointData):
             if lambertIntensity > 0:
                 color += multiply(multiply(obj.material.color, obj.material.lambert), lambertIntensity)
     return color
+
 
 def intersect(level, ray, maxlevel):
     if level >= maxlevel:
