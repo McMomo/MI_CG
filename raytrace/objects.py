@@ -2,7 +2,7 @@ from numpy import *
 
 
 class Material:
-    def __init__(self, color, reflective=False, texture=None, specular=0.5, lambert=1.5, ambient=0.5):
+    def __init__(self, color, reflective=False, texture=None, specular=0.5, lambert=1, ambient=0.9):
         self.color = color
         self.reflective = reflective
         self.texture = texture

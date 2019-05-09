@@ -174,7 +174,8 @@ if __name__ == "__main__":
     if len(sys.argv) <= 1 :
         sys.exit(1) #TODO error msg.
 
-    res = 200
+    wres = 300
+    hres = 200
 
     up = array([0, 1, 0])
     radius = 60
@@ -183,8 +184,8 @@ if __name__ == "__main__":
     z = 500
     fov = -45
 
-    camera = Camera(array([0, 50, 0]), up, array([0, top / 2, z]), fov, 300, 200)  # e, up, c, fov, res
-    image = Image.new("RGB", (300, 200))
+    camera = Camera(array([0, 50, 0]), up, array([0, top / 2, z]), fov, wres, hres)  # e, up, c, fov, res
+    image = Image.new("RGB", (wres, hres))
 
     if sys.argv[1] == "light":
         print("Image with light ...")
