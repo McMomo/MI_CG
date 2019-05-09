@@ -13,19 +13,20 @@ maxlevel = 3
 
 
 class Camera(object):
-    def __init__(self, e, up, c, fov, res):
+    def __init__(self, e, up, c, fov, wres, hres):
 
         self.e = e
         self.up = up
         self.c = c
         self.fov = fov
-        self.res = res
+        self.wres = wres
+        self.hres = hres
 
         self.f = (c - e) / linalg.norm(c - e)
         self.s = cross(self.f , up) / linalg.norm(cross(self.f , up))
         self.u = cross(self.s, self.f)
 
-        self.aspectratio = res/res
+        self.aspectratio = wres/hres
         self.alpha = fov/2
         self.height = 2 * tan(self.alpha)
         self.width = self.aspectratio * self.height
@@ -53,6 +54,7 @@ def render_thread(t, resParts):
     return
 
 def render():
+
     '''
     threadCount = 4
     resParts = res/threadCount
@@ -72,8 +74,9 @@ def render():
         x.join()
 
     '''
-    for x in range(res):
-        for y in range(res):
+
+    for x in range(camera.wres):
+        for y in range(camera.hres):
             ray = calcRay(x, y)
             color = tuple(int(f) for f in traceRay(0, ray))
             image.putpixel((x, y), color)
@@ -81,8 +84,8 @@ def render():
 
 def calcRay(x, y):
     global camera
-    pixelWidth = camera.width / (camera.res - 1)
-    pixelHeight = camera.height / (camera.res - 1)
+    pixelWidth = camera.width / (camera.wres - 1)
+    pixelHeight = camera.height / (camera.hres - 1)
     xcomp = multiply(camera.s, (x * pixelWidth - camera.width / 2))
     ycomp = multiply(camera.u, (y * pixelHeight - camera.height / 2))
     return Ray(camera.e, camera.f + xcomp + ycomp) # evtl. mehrere Strahlen pro Pixel
@@ -180,8 +183,8 @@ if __name__ == "__main__":
     z = 500
     fov = -45
 
-    camera = Camera(array([0, 50, 0]), up, array([0, top / 2, z]), fov, res)  # e, up, c, fov, res
-    image = Image.new("RGB", (res, res))
+    camera = Camera(array([0, 50, 0]), up, array([0, top / 2, z]), fov, 300, 200)  # e, up, c, fov, res
+    image = Image.new("RGB", (300, 200))
 
     if sys.argv[1] == "light":
         print("Image with light ...")
