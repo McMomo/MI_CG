@@ -3,8 +3,8 @@ from Tkinter import *
 from Canvas import *
 import sys
 
-WIDTH  = 400 # width of canvas
-HEIGHT = 400 # height of canvas
+width  = 400 # width of canvas
+height = 400 # height of canvas
 
 HPSIZE = 2 # half of point size (must be integer)
 CCOLOR = "#0000FF" # blue
@@ -17,7 +17,7 @@ polygonA = []
 polygonZ = []
 
 time = 0
-dt = 0.001
+dt = 0.1
 
 def drawObjekts():
     """ draw polygon and points """
@@ -98,9 +98,9 @@ if __name__ == "__main__":
     mw._root().wm_title("Morphing")
 
     # create and position canvas and buttons
-    cFr = Frame(mw, width=WIDTH, height=HEIGHT, relief="sunken", bd=1)
+    cFr = Frame(mw, width=width, height=height, relief="sunken", bd=1)
     cFr.pack(side="top")
-    can = Canvas(cFr, width=WIDTH, height=HEIGHT)
+    can = Canvas(cFr, width=width, height=height)
     can.pack()
     cFr = Frame(mw)
     cFr.pack(side="left")
@@ -117,11 +117,11 @@ if __name__ == "__main__":
 
     fileZ = open("polygonZ.dat")
     for line in fileZ.readlines():
-        polygonZ.insert(0, [float(line.split()[0]) * WIDTH, (1-float(line.split()[1])) * HEIGHT])
+        polygonZ.insert(0, [float(line.split()[0]) * width, (1 - float(line.split()[1])) * height])
 
     fileA = open("polygonA.dat")
     for line in fileA.readlines():
-        polygonA.insert(0, [float(line.split()[0]) * WIDTH, (1-float(line.split()[1])) * HEIGHT])
+        polygonA.insert(0, [float(line.split()[0]) * width, (1 - float(line.split()[1])) * height])
 
 
     polygon = copy.deepcopy(polygonA)
