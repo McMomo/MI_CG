@@ -1,8 +1,12 @@
-from Tkinter import *
-from Canvas import *
+from tkinter import *
+#from Canvas import *
 import sys
 import random
+
+from OpenGL.raw.GL.VERSION.GL_1_0 import glOrtho, glFrustum
+from OpenGL.raw.GLU import gluLookAt
 from numpy import *
+from OpenGL import *
 
 WIDTH  = 400 # width of canvas
 HEIGHT = 400 # height of canvas
@@ -55,17 +59,18 @@ if __name__ == "__main__":
        print("pointViewerTemplate.py")
        sys.exit(-1)
 
-    data = list()
+    input = list()
 
     with open(sys.argv[1], "r") as file:
         for line in file.readlines():
             line = line.split()
-            data.append(array([float(line[0]), float(line[1]), float(line[2])]))
+            input.append(array([float(line[0]), float(line[1]), float(line[2])]))
 
 
-    bbox = {"top":data[0][1],"bottom":data[0][1],"right":data[0][0],"left":data[0][0]} # max(y), min(y), max(x), min(x)
+    # 1. calculate the BoundaryBox
+    bbox = {"top":input[0][1],"bottom":input[0][1],"right":input[0][0],"left":input[0][0], "far":input[0][0], "near":input[0][0]} # max(y), min(y), max(x), min(x), max(z), min(z)
 
-    for vec in data:
+    for vec in input:
         if vec[0] > bbox["right"]:
             bbox["right"] = vec[0]
         elif vec[0] < bbox["left"]:
@@ -76,21 +81,30 @@ if __name__ == "__main__":
         elif vec[1] < bbox["bottom"]:
             bbox["bottom"] = vec[1]
 
-    dataOrigin = array([bbox["left"], bbox["bottom"], 0])
-    origin = array([0, 0, 0])
+        if vec[2] > bbox["far"]:
+            bbox["far"] = vec[2]
+        elif vec[2] < bbox["near"]:
+            bbox["near"] = vec[2]
 
-    dif = origin - dataOrigin
 
-    print("Dif: ",dif)
+    # 2.
+    # 2.1Put the middle of the Boundingbox in the origin (F.65?) &&
+    '''
+    bboxMedian = [median([bbox["right"], bbox["left"]]), median([bbox["top"], bbox["bottom"]])]
+    for vec in input:
+        data.append(matrix(vec) + matrix([[1, 0, 0], [0, 1, 0], [-bboxMedian[0], -bboxMedian[1], 1]]))
 
-    print("bbox: ",bbox)
+    print(data[0])
+    '''
 
-    print("data: ", data[0])
+    glOrtho(bbox["left"],bbox["right"],bbox["bottom"],bbox["top"],bbox["near"],bbox["far"])
 
-    for vec in data: #FIXME Wie auf Folie Seite 65 -> so ist die transformation/verscheibung falsch
-        vec += dif
+    # 2.2scale in to[-1, 1] ^ 3 (F.111)
+    glFrustum(bbox["left"], bbox["right"],bbox["bottom"],bbox["top"],bbox["near"],bbox["far"])
 
-    print("data + dif : ", data[0])
+
+    # 3.
+    gluLookAt(2,2,2,0,0,0,0,1,0) # Einfach aus VL F.107
 
     # create main window
     mw = Tk()
