@@ -63,23 +63,17 @@ if __name__ == "__main__":
 
 
     # 1. calculate the BoundaryBox
-    bbox = {"top":input[0][1],"bottom":input[0][1],"right":input[0][0],"left":input[0][0], "far":input[0][2], "near":input[0][2]} # max(y), min(y), max(x), min(x), max(z), min(z)
+    vecX = [vec[0] for vec in input]
+    vecY = [vec[1] for vec in input]
+    vecZ = [vec[2] for vec in input]
 
-    for vec in input:
-        if vec[0] > bbox["right"]:
-            bbox["right"] = vec[0]
-        elif vec[0] < bbox["left"]:
-            bbox["left"] = vec[0]
-
-        if vec[1] > bbox["top"]:
-            bbox["top"] = vec[1]
-        elif vec[1] < bbox["bottom"]:
-            bbox["bottom"] = vec[1]
-
-        if vec[2] > bbox["far"]:
-            bbox["far"] = vec[2]
-        elif vec[2] < bbox["near"]:
-            bbox["near"] = vec[2]
+    bbox = {"right": max(vecX),
+            "left": min(vecX),
+            "top": max(vecY),
+            "bottom": min(vecY),
+            "far":max(vecZ),
+            "near":min(vecZ)
+            }
 
 
     # 2.
