@@ -1,6 +1,6 @@
 import tkinter
 import sys
-import numpy
+import numpy as np
 
 WIDTH  = 400 # width of canvas
 HEIGHT = 400 # height of canvas
@@ -12,7 +12,7 @@ NOPOINTS = 1000
 
 pointList = [] # list of points (used by Canvas.delete(...))
 
-data = []
+points = []
 
 def quit(root=None):
     """ quit programm """
@@ -23,9 +23,9 @@ def quit(root=None):
 
 def draw():
     """ draw points """
-    for i in data:
-        #4. Transform to [0,0] x [WIDTH, HEIGHT]
-        x, y = (1+i[0])*WIDTH/2.0, (1-i[1])*HEIGHT/2.0
+    global points
+    for i in points:
+        x, y = i[0], i[1]
         p = can.create_oval(x-HPSIZE, y-HPSIZE, x+HPSIZE, y+HPSIZE, fill=COLOR, outline=COLOR)
         pointList.append(p)
 
@@ -33,18 +33,32 @@ def draw():
 
 def rotYp():
     """ rotate counterclockwise around y axis """
-    global NOPOINTS
-    NOPOINTS += 100
-    print("In rotYp: ", NOPOINTS)
+    global points
     can.delete(*pointList)
+
+    #FIXME rotation like on a vinyl
+    theta = np.pi / 6
+    c, s = np.cos(theta), np.sin(theta)
+
+    rotAxis = np.array([[c, 0, -s], [0, 1, 0], [s, 0, c]])
+
+    points = [np.dot(p, rotAxis) for p in points]
+
     draw()
 
 def rotYn():
     """ rotate clockwise around y axis """
-    global NOPOINTS
-    NOPOINTS -= 100
-    print("In rotYn: ", NOPOINTS )
+    global points
     can.delete(*pointList)
+
+    # FIXME rotation like on a vinyl
+    theta = -(np.pi / 6)
+    c, s = np.cos(theta), np.sin(theta)
+
+    rotAxis = np.array([[c, 0, -s], [0, 1, 0], [s, 0, c]])
+
+    points = [np.dot(p, rotAxis) for p in points]
+
     draw()
 
 
@@ -54,18 +68,18 @@ if __name__ == "__main__":
        print("pointViewerTemplate.py")
        sys.exit(-1)
 
-    input = list()
+    points = list()
 
     with open(sys.argv[1], "r") as file:
         for line in file.readlines():
             line = line.split()
-            input.append(numpy.array([float(line[0]), float(line[1]), float(line[2])]))
+            points.append(np.array([float(line[0]), float(line[1]), float(line[2])]))
 
 
     # 1. calculate the BoundaryBox
-    vecX = [vec[0] for vec in input]
-    vecY = [vec[1] for vec in input]
-    vecZ = [vec[2] for vec in input]
+    vecX = [vec[0] for vec in points]
+    vecY = [vec[1] for vec in points]
+    vecZ = [vec[2] for vec in points]
 
     bbox = {"right": max(vecX),
             "left": min(vecX),
@@ -77,16 +91,25 @@ if __name__ == "__main__":
 
 
     # 2.
-    # 2.1Put the middle of the Boundingbox in the origin (F.65?) &&
-    bboxMedian = [numpy.median([bbox["right"], bbox["left"]]), numpy.median([bbox["top"], bbox["bottom"]]), numpy.median([bbox["far"], bbox["near"]])]
-    data = input - numpy.array([bboxMedian[0], bboxMedian[1], bboxMedian[2]])
+    # 2.1Put the middle of the Boundingbox in the origin
+    bboxMedian = [np.median([bbox["right"], bbox["left"]]), np.median([bbox["top"], bbox["bottom"]]), np.median([bbox["far"], bbox["near"]])]
+    points = points - np.array([bboxMedian[0], bboxMedian[1], bboxMedian[2]])
 
-    # 2.2 scale in to[-1, 1] ^ 3 (F.110) scale factor 2/max
+    # 2.2 scale in to[-1, 1]^3 | scale factor is 2/maxDiagonal
     maxVec = max([bbox["right"]-bbox["left"], bbox["top"]-bbox["bottom"], bbox["far"]-bbox["near"]])
-    data = data * (2/maxVec)
+    points = points * (2.0 / maxVec)
 
-    # 3. Model to [-1, 1]^2 on x-y with "ortographischer Parallelprojektion
-    #F.106 Grundriss -> einfach z weglassen
+    # 4. Transform to [0,0] x [WIDTH, HEIGHT]
+    for vec in points:
+        vec[0] = (1 + vec[0]) * WIDTH / 2.0
+        vec[1] = (1 - vec[1]) * HEIGHT / 2.0
+        vec[2] = (1 + vec[2]) * HEIGHT / 2.0 #FIXME Height or Width?
+
+
+    #Get rotaion axis FIXME i need to get the middle of x and z not the y-axis
+    rotationAxis = [np.median([bbox["right"]* (2.0 / maxVec), bbox["left"]* (2.0 / maxVec)]),
+                    1,
+                    np.median([bbox["far"]* (2.0 / maxVec), bbox["near"]* (2.0 / maxVec)])]
 
     # create main window
     mw = tkinter.Tk()
