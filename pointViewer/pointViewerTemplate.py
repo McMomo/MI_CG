@@ -37,12 +37,20 @@ def rotYp():
     can.delete(*pointList)
 
     #FIXME rotation like on a vinyl
-    theta = np.pi / 6
+    theta = np.pi / 30
     c, s = np.cos(theta), np.sin(theta)
 
-    rotAxis = np.array([[c, 0, -s], [0, 1, 0], [s, 0, c]])
+    rotMat = np.array([[c, 0, -s], rotationAxis, [s, 0, c]])
 
-    points = [np.dot(p, rotAxis) for p in points]
+    v = theta * rotationAxis
+
+    r = np.array([[0, 0, v], [-v, 0, 0], [0, 0, 0]])
+
+    points = [p + np.dot(p, r) for p in points]
+
+    #points = [np.dot(rotMat,p) for p in points]
+
+    #points = np.dot(points, rotMat)
 
     draw()
 
@@ -52,12 +60,12 @@ def rotYn():
     can.delete(*pointList)
 
     # FIXME rotation like on a vinyl
-    theta = -(np.pi / 6)
+    theta = -(np.pi / 30)
     c, s = np.cos(theta), np.sin(theta)
 
-    rotAxis = np.array([[c, 0, -s], [0, 1, 0], [s, 0, c]])
+    rotMat = np.array([[c, 0, -s], rotationAxis, [s, 0, c]])
 
-    points = [np.dot(p, rotAxis) for p in points]
+    points = [np.dot(p, rotMat) for p in points]
 
     draw()
 
@@ -103,13 +111,32 @@ if __name__ == "__main__":
     for vec in points:
         vec[0] = (1 + vec[0]) * WIDTH / 2.0
         vec[1] = (1 - vec[1]) * HEIGHT / 2.0
-        vec[2] = (1 + vec[2]) * HEIGHT / 2.0 #FIXME Height or Width?
+        vec[2] = (1 + vec[2]) * HEIGHT / 2.0 #FIXME Height or Width? Step 3. said otherwise
+
 
 
     #Get rotaion axis FIXME i need to get the middle of x and z not the y-axis
-    rotationAxis = [np.median([bbox["right"]* (2.0 / maxVec), bbox["left"]* (2.0 / maxVec)]),
-                    1,
-                    np.median([bbox["far"]* (2.0 / maxVec), bbox["near"]* (2.0 / maxVec)])]
+    max = np.amax(points, 0)
+    min = np.amin(points, 0)
+
+    '''
+    maxBB = np.array([bbox["right"], bbox["top"], bbox["far"]]) * (2.0 / maxVec)
+    minBB = np.array([bbox["left"], bbox["bottom"], bbox["near"]]) * (2.0 / maxVec)
+
+    maxBB[0] = (1 + maxBB[0]) * WIDTH / 2.0
+    maxBB[1] = (1 - maxBB[1]) * HEIGHT / 2.0
+    maxBB[2] = (1 + maxBB[2]) * WIDTH / 2.0
+
+    minBB[0] = (1 + minBB[0]) * WIDTH / 2.0
+    minBB[1] = (1 - minBB[1]) * HEIGHT / 2.0
+    minBB[2] = (1 + minBB[2]) * WIDTH / 2.0
+    '''
+
+
+
+    rotationAxis = np.array([min[0] + (max[0] - min[0]) / 2,
+                             1,
+                             min[2] + (max[2] - min[2]) / 2])
 
     # create main window
     mw = tkinter.Tk()
