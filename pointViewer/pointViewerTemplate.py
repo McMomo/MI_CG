@@ -36,21 +36,19 @@ def rotYp():
     global points
     can.delete(*pointList)
 
-    #FIXME rotation like on a vinyl
-    theta = np.pi / 30
+    #FIXME rotation like on a vinyl with [0, 1, 0]
+    theta = np.pi / 6
     c, s = np.cos(theta), np.sin(theta)
 
     rotMat = np.array([[c, 0, -s], rotationAxis, [s, 0, c]])
 
-    v = theta * rotationAxis
+    #v = theta * rotationAxis
 
-    r = np.array([[0, 0, v], [-v, 0, 0], [0, 0, 0]])
+    #r = np.array([[0, 0, v], [-v, 0, 0], [0, 0, 0]])
 
-    points = [p + np.dot(p, r) for p in points]
+    #points = [p + np.dot(p, r) for p in points]
 
-    #points = [np.dot(rotMat,p) for p in points]
-
-    #points = np.dot(points, rotMat)
+    points = np.dot(points, rotMat)
 
     draw()
 
@@ -59,8 +57,8 @@ def rotYn():
     global points
     can.delete(*pointList)
 
-    # FIXME rotation like on a vinyl
-    theta = -(np.pi / 30)
+    # FIXME rotation like on a vinyl with [0, 1, 0]
+    theta = -(np.pi / 6)
     c, s = np.cos(theta), np.sin(theta)
 
     rotMat = np.array([[c, 0, -s], rotationAxis, [s, 0, c]])
@@ -89,14 +87,9 @@ if __name__ == "__main__":
     vecY = [vec[1] for vec in points]
     vecZ = [vec[2] for vec in points]
 
-    bbox = {"right": max(vecX),
-            "left": min(vecX),
-            "top": max(vecY),
-            "bottom": min(vecY),
-            "far":max(vecZ),
-            "near":min(vecZ)
-            }
-
+    bbox = {"right": max(vecX), "left": min(vecX),
+            "top": max(vecY), "bottom": min(vecY),
+            "far":max(vecZ), "near":min(vecZ)}
 
     # 2.
     # 2.1Put the middle of the Boundingbox in the origin
@@ -114,25 +107,9 @@ if __name__ == "__main__":
         vec[2] = (1 + vec[2]) * HEIGHT / 2.0 #FIXME Height or Width? Step 3. said otherwise
 
 
-
     #Get rotaion axis FIXME i need to get the middle of x and z not the y-axis
     max = np.amax(points, 0)
     min = np.amin(points, 0)
-
-    '''
-    maxBB = np.array([bbox["right"], bbox["top"], bbox["far"]]) * (2.0 / maxVec)
-    minBB = np.array([bbox["left"], bbox["bottom"], bbox["near"]]) * (2.0 / maxVec)
-
-    maxBB[0] = (1 + maxBB[0]) * WIDTH / 2.0
-    maxBB[1] = (1 - maxBB[1]) * HEIGHT / 2.0
-    maxBB[2] = (1 + maxBB[2]) * WIDTH / 2.0
-
-    minBB[0] = (1 + minBB[0]) * WIDTH / 2.0
-    minBB[1] = (1 - minBB[1]) * HEIGHT / 2.0
-    minBB[2] = (1 + minBB[2]) * WIDTH / 2.0
-    '''
-
-
 
     rotationAxis = np.array([min[0] + (max[0] - min[0]) / 2,
                              1,
