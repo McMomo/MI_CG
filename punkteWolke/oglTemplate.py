@@ -59,7 +59,7 @@ def reshape(width, height):
 def keyPressed(key, x, y):
    key = str(key)
    key = key.split('\'')[1]
-   """ handle keypress events """ #TODO
+   """ handle keypress events """
    if key == chr(27) or key == chr(113): # chr(27) = ESCAPE chr(113) = q
        sys.exit(0)
    elif key == chr(120): # x
