@@ -28,90 +28,54 @@ import glfw
 from OpenGL.GL import *
 from OpenGL.GLU import *
 from OpenGL.GLUT import *
+from OpenGL.arrays import vbo
 
 import numpy as np
 
+from helper import ObjParser, BBox
+
+myVBO = None
 
 class Scene:
     """ OpenGL 2D scene class """
     # initialization
     def __init__(self, width, height):
-        # time
-        self.t = 0
-        self.showVector = True
-        self.point  = np.array([0,0])
-        self.vector = np.array([10,10])
-        self.pointsize = 3
+        global myVBO
         self.width = width
         self.height = height
-        glPointSize(self.pointsize)
-        glLineWidth(self.pointsize)
 
+        self.object = ObjParser("cow.obj")
 
-    # step
-    def step(self):
-        # move point
-        self.point = self.point + 0.1*self.vector
-        
-        # check borders
-        if self.point[0] < -self.width/2:    # point hits left border
-            # mirror at n = [1,0]
-            n = np.array([1,0])
-            self.vector = self.mirror(self.vector, n)
-        elif self.point[0] > self.width/2:    # point hits right border
-            # mirrot at n = [-1,0]
-            n = np.array([-1,0])
-            self.vector = self.mirror(self.vector, n)
-        elif self.point[1] < -self.height/2:           # point hits upper border
-            # mirrot at n = [0,1]
-            n = np.array([0,1])
-            self.vector = self.mirror(self.vector, n)
-        elif self.point[1] > self.height/2: # point hits lower border
-            # mirrot at n = [0,-1]
-            n = np.array([0,-1])
-            self.vector = self.mirror(self.vector, n)
-        
-        #print(self.point, self.vector)
-    
-    
-    # mirror a vector v at plane with normal n
-    def mirror(self, v, n):
-        # normalize n
-        normN = n / np.linalg.norm(n)
-        # project negative v on n
-        l = np.dot(-v, n)
-        # mirror v
-        mv = v + 2*l*n
-        return mv
-    
-    
+        self.bbox = BBox(self.object)
+        self.bbox.move_to_origin()
+        self.bbox.scale_to_kanonisches_Sichtvolumen()
+
+        self.points = self.bbox.points
+
+        #self.points = [p/np.linalg.norm(p) for p in self.points]
+
+        #self.points = self.points*width
+
+        myVBO = vbo.VBO(np.array(self.points, 'f'))
+
     # render 
     def render(self):
-        # render a point
-        glBegin(GL_POINTS)
-        glColor(0.0, 0.0, 1.0)
-        glVertex2fv(self.point)
-        glEnd()
-        
-        # render the vector starting at the point
-        if self.showVector:
-            glColor(1.0, 0.0, 0.0)
-            glBegin(GL_LINES)
-            # the line from the point to the end of the vector
-            glVertex2fv(self.point)
-            glVertex2fv(self.point+self.vector)
-            
-            # make an arrow at the tip of the vector
-            normvector = self.vector/np.linalg.norm(self.vector)
-            rotnormvec = np.array([-normvector[1], normvector[0]])
-            p1 = self.point + self.vector - 6*normvector
-            a = p1 + 3*self.pointsize/2*rotnormvec
-            b = p1 - 3*self.pointsize/2*rotnormvec
-            glVertex2fv(self.point+self.vector)
-            glVertex2fv(a)
-            glVertex2fv(self.point+self.vector)
-            glVertex2fv(b)
-            glEnd()
+        global myVBO
+
+        glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT)
+        glColor3f(.75,.75,.75)
+        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE)
+
+        myVBO.bind()
+        glVertexPointerf(myVBO)
+        glEnableClientState(GL_VERTEX_ARRAY)
+        glDrawArrays(GL_POLYGON, 0, len(self.points))
+        myVBO.unbind()
+
+        glDisableClientState(GL_VERTEX_ARRAY)
+        glFlush()
+
+
 
 
 
@@ -176,11 +140,20 @@ class RenderWindow:
 
         # animation flag
         self.animation = True
+
+        # change color of the background or the object
     
     
     def onMouseButton(self, win, button, action, mods):
         print("mouse button: ", win, button, action, mods)
-    
+        if action == glfw.PRESS:
+            if button == glfw.MOUSE_BUTTON_LEFT:
+                print("I should rotate now.")
+            if button == glfw.MOUSE_BUTTON_MIDDLE:
+                print("Zoom in zoom out.")
+            if button == glfw.MOUSE_BUTTON_RIGHT:
+                print("Move your body.")
+
 
     def onKeyboard(self, win, key, scancode, action, mods):
         print("keyboard: ", win, key, scancode, action, mods)
@@ -194,6 +167,26 @@ class RenderWindow:
             if key == glfw.KEY_A:
                 # toggle animation
                 self.animation = not self.animation
+
+            if key == glfw.KEY_O:
+                print("Now, i should switch to othogonal-projection")
+            if key == glfw.KEY_P:
+                print("Now, i should switch to central-projection")
+
+            if key == glfw.KEY_F:
+                self.focus = not self.focus
+
+            if key == glfw.KEY_S:
+                print("Switch color to black")
+            if key == glfw.KEY_W:
+                print("Switch color to white")
+            if key == glfw.KEY_R:
+                print("Switch color to red")
+            if key == glfw.KEY_B:
+                print("Switch color to blue")
+            if key == glfw.KEY_G:
+                print("Switch color to yellow")
+
 
 
     def onSize(self, win, width, height):
@@ -218,8 +211,6 @@ class RenderWindow:
                 glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
                 
                 # render scene
-                if self.animation:
-                    self.scene.step()
                 self.scene.render()
                 
                 glfw.swap_buffers(self.window)
@@ -232,7 +223,7 @@ class RenderWindow:
 
 # main() function
 def main():
-    print("Simple glfw render Window")    
+    print("Simple glfw render Window")
     rw = RenderWindow()
     rw.run()
 
