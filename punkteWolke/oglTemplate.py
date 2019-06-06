@@ -112,8 +112,8 @@ def process_input(filepath):
                                np.median([bbox["far"], bbox["near"]])])
 
    #scale in to[-1, 1]^3 | scale factor is 2/maxDiagonal
-   maxVec = max([bbox["right"] - bbox["left"], bbox["top"] - bbox["bottom"], bbox["far"] - bbox["near"]])
-   points = points * (2.0 / maxVec)
+   maxDiagonal = max([bbox["right"] - bbox["left"], bbox["top"] - bbox["bottom"], bbox["far"] - bbox["near"]])
+   points = points * (2.0 / maxDiagonal)
 
 
 def main():
