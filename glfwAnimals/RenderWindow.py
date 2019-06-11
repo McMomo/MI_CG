@@ -46,7 +46,7 @@ class Scene:
 
         self.object = ObjParser("cow.obj")
 
-        self.bbox = BBox(self.object)
+        self.bbox = BBox(self.object.vertices)
         self.bbox.move_to_origin()
         self.bbox.scale_to_kanonisches_Sichtvolumen()
 
@@ -54,14 +54,13 @@ class Scene:
 
         #self.points = [p/np.linalg.norm(p) for p in self.points]
 
-        #self.points = self.points*width
+        myVBO = vbo.VBO(np.array(self.object.faces, 'f'))
 
-        myVBO = vbo.VBO(np.array(self.points, 'f'))
 
     # render 
     def render(self):
         global myVBO
-
+        '''
         glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT)
         glColor3f(.75,.75,.75)
         glPolygonMode(GL_FRONT_AND_BACK, GL_LINE)
@@ -69,13 +68,24 @@ class Scene:
         myVBO.bind()
         glVertexPointerf(myVBO)
         glEnableClientState(GL_VERTEX_ARRAY)
-        glDrawArrays(GL_POLYGON, 0, len(self.points))
+        glDrawArrays(GL_TRIANGLES, 0, len(self.points))
+        myVBO.unbind()
+        
+        glDisableClientState(GL_VERTEX_ARRAY)
+        glFlush()
+        '''
+        glClear(GL_COLOR_BUFFER_BIT)
+        myVBO.bind()
+        glEnableClientState(GL_VERTEX_ARRAY)
+        glEnableClientState(GL_NORMAL_ARRAY)
+        glVertexPointer(3, GL_FLOAT, 24, myVBO)
+        glVertexPointer(3, GL_FLOAT, 24, myVBO + 12)
+        glLoadIdentity()
+        glDrawArrays(GL_TRIANGLES, 0, len(self.object.faces))
         myVBO.unbind()
 
         glDisableClientState(GL_VERTEX_ARRAY)
         glFlush()
-
-
 
 
 

@@ -23,10 +23,12 @@ class ObjParser:
                 vtLine = line.split()
                 vt  = np.array([float(i) for i in vtLine[1:]])
                 self.texture.append(vt)
+
             elif (line.startswith("vn ")):
                 vnLine = line.split()
                 vn = np.array([float(i) for i in vnLine[1:]])
                 self.normals.append(vn)
+
             elif (line.startswith("f ")):
                 fLine = line.split()
                 #f v/vt/vn or f v//vn or f v

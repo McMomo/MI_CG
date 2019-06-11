@@ -2,7 +2,7 @@ import numpy as np
 
 class BBox:
     def __init__(self, points):
-        if list() == type(points):
+        if type(list()) == type(points):
             self.points = points
 
         else:
