@@ -1,8 +1,8 @@
 import numpy as np
 
-class BBox:
+class BBox():
     def __init__(self, points):
-        if type(list()) == type(points):
+        if type(points) is list or type(points) is np.ndarray:
             self.points = points
 
         else:
@@ -13,10 +13,13 @@ class BBox:
             self.points = []
 
             for face in self.faces:
-                n = face[0]
-                self.points.append(self.normals[n])
                 for f in face:
                     self.points.append(self.vertices[f])
+
+            for face in self.faces:
+                n = face[0]
+                self.points.append(self.normals[n])
+
 
         # Bounding Box
         vecX = [vec[0] for vec in self.points]

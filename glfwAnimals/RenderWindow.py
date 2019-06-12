@@ -30,70 +30,62 @@ from OpenGL.GLU import *
 from OpenGL.GLUT import *
 from OpenGL.arrays import vbo
 
-import numpy as np
+from ObjParser import ObjParser
 
-from helper import ObjParser, BBox
+import numpy as np
 
 myVBO = None
 
-class Scene:
+class Scene():
     """ OpenGL 2D scene class """
     # initialization
-    def __init__(self, width, height):
-        global myVBO
+    def __init__(self, width, height, filepath):
+        self.color = (1.0, 0, 0)
+        self.angle = 0.
+        self.axis = np.array([0., 1., 0.])
         self.width = width
         self.height = height
+        glEnable(GL_LIGHTING)
+        glEnable(GL_COLOR_MATERIAL)
+        glEnable(GL_LIGHT0)
+        glEnable(GL_DEPTH_TEST)
+        glEnable(GL_NORMALIZE)
 
-        self.object = ObjParser("cow.obj")
-
-        self.bbox = BBox(self.object.vertices)
-        self.bbox.move_to_origin()
-        self.bbox.scale_to_kanonisches_Sichtvolumen()
-
-        self.points = self.bbox.points
-
-        #self.points = [p/np.linalg.norm(p) for p in self.points]
-
-        myVBO = vbo.VBO(np.array(self.object.faces, 'f'))
-
+        self.objectPars = ObjParser(filepath)
 
     # render 
     def render(self):
         global myVBO
-        '''
-        glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT)
-        glColor3f(.75,.75,.75)
-        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE)
 
-        myVBO.bind()
-        glVertexPointerf(myVBO)
-        glEnableClientState(GL_VERTEX_ARRAY)
-        glDrawArrays(GL_TRIANGLES, 0, len(self.points))
-        myVBO.unbind()
-        
-        glDisableClientState(GL_VERTEX_ARRAY)
-        glFlush()
-        '''
         glClear(GL_COLOR_BUFFER_BIT)
+        vboList = self.objectPars.getVboList()
+        myVBO = vbo.VBO(np.array(vboList, 'f'))
         myVBO.bind()
+
+
         glEnableClientState(GL_VERTEX_ARRAY)
         glEnableClientState(GL_NORMAL_ARRAY)
-        glVertexPointer(3, GL_FLOAT, 24, myVBO)
-        glVertexPointer(3, GL_FLOAT, 24, myVBO + 12)
-        glLoadIdentity()
-        glDrawArrays(GL_TRIANGLES, 0, len(self.object.faces))
-        myVBO.unbind()
 
+        glVertexPointer(3, GL_FLOAT, 24, myVBO)
+        glNormalPointer(GL_FLOAT, 24, myVBO + 12)
+
+        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL)
+        glColor3f(self.color[0], self.color[1], self.color[2])
+        glDrawArrays(GL_TRIANGLES, 0, len(vboList))
+
+        myVBO.unbind()
         glDisableClientState(GL_VERTEX_ARRAY)
+        glDisableClientState(GL_NORMAL_ARRAY)
         glFlush()
 
+    def setColor(self, color):
+        self.color = color
 
 
 
-
-class RenderWindow:
+class RenderWindow():
     """GLFW Rendering window class"""
-    def __init__(self):
+    def __init__(self, filepath):
         
         # save current working directory
         cwd = os.getcwd()
@@ -120,7 +112,7 @@ class RenderWindow:
         # make a window
         self.width, self.height = 640, 480
         self.aspect = self.width/float(self.height)
-        self.window = glfw.create_window(self.width, self.height, "2D Graphics", None, None)
+        self.window = glfw.create_window(self.width, self.height, "GLFW Animals", None, None)
         if not self.window:
             glfw.terminate()
             return
@@ -133,25 +125,22 @@ class RenderWindow:
         glEnable(GL_DEPTH_TEST)
         glClearColor(1.0, 1.0, 1.0, 1.0)
         glMatrixMode(GL_PROJECTION)
-        glOrtho(-self.width/2,self.width/2,-self.height/2,self.height/2,-2,2)
+
+        self.onSize(self.window, self.width, self.height)
+
         glMatrixMode(GL_MODELVIEW)
 
-        
         # set window callbacks
         glfw.set_mouse_button_callback(self.window, self.onMouseButton)
         glfw.set_key_callback(self.window, self.onKeyboard)
         glfw.set_window_size_callback(self.window, self.onSize)
         
         # create 3D
-        self.scene = Scene(self.width, self.height)
+        self.scene = Scene(self.width, self.height, filepath)
         
         # exit flag
         self.exitNow = False
 
-        # animation flag
-        self.animation = True
-
-        # change color of the background or the object
     
     
     def onMouseButton(self, win, button, action, mods):
@@ -171,12 +160,6 @@ class RenderWindow:
             # ESC to quit
             if key == glfw.KEY_ESCAPE:
                 self.exitNow = True
-            if key == glfw.KEY_V:
-                # toggle show vector
-                self.scene.showVector = not self.scene.showVector
-            if key == glfw.KEY_A:
-                # toggle animation
-                self.animation = not self.animation
 
             if key == glfw.KEY_O:
                 print("Now, i should switch to othogonal-projection")
@@ -188,14 +171,19 @@ class RenderWindow:
 
             if key == glfw.KEY_S:
                 print("Switch color to black")
+                self.scene.setColor((0.0, 0.0, 0.0))
             if key == glfw.KEY_W:
                 print("Switch color to white")
+                self.scene.setColor((1.0, 1.0, 1.0))
             if key == glfw.KEY_R:
                 print("Switch color to red")
+                self.scene.setColor((1.0, 0.0, 0.0))
             if key == glfw.KEY_B:
                 print("Switch color to blue")
+                self.scene.setColor((0.0, 0.0, 1.0))
             if key == glfw.KEY_G:
                 print("Switch color to yellow")
+                self.scene.setColor((1.0, 1.0, 0.0))
 
 
 
@@ -205,6 +193,17 @@ class RenderWindow:
         self.height = height
         self.aspect = width/float(height)
         glViewport(0, 0, self.width, self.height)
+        glMatrixMode(GL_PROJECTION)
+        glLoadIdentity()
+        if width <= height:
+            glOrtho(-1.5, 1.5,
+                    -1.5 * height / width, 1.5 * height / width,
+                    -1.0, 1.0)
+        else:
+            glOrtho(-1.5 * width / height, 1.5 * width / height,
+                    -1.5, 1.5,
+                    -1.0, 1.0)
+        glMatrixMode(GL_MODELVIEW)
     
 
     def run(self):
@@ -234,7 +233,7 @@ class RenderWindow:
 # main() function
 def main():
     print("Simple glfw render Window")
-    rw = RenderWindow()
+    rw = RenderWindow("bunny.obj")
     rw.run()
 
 
