@@ -88,7 +88,13 @@ class Scene():
         c, mc = np.cos(angle), 1-np.cos(angle)
         s = np.sin(angle)
         l = np.sqrt(np.dot(np.array(axis), np.array(axis)))
-        x, y, z = np.array(axis)/l
+
+        if l == 0:
+            print("l : ", l, "\naxis: ", axis, "\n")
+            x, y, z = np.array([0.0, 1.0, 0.0])/1.0
+        else:
+            x, y, z = np.array(axis) / l
+
         r = np.array(
             [[x*x*mc+c, x*y*mc-z*s, x*z*mc+y*s, 0],
              [x*y*mc+z*s, y*y*mc+c, y*z*mc-x*s, 0],
@@ -146,10 +152,10 @@ class RenderWindow():
         # initialize GL
         glViewport(0, 0, self.width, self.height)
         glEnable(GL_DEPTH_TEST)
-        glClearColor(1.0, 1.0, 1.0, 1.0)
+        glClearColor(1.0, 1.0, 1.0, 1.0) #Background Color
         glMatrixMode(GL_PROJECTION)
 
-        self.onSize(self.window, self.width, self.height)
+        self.onSize(self.window, self.width, self.height) #Otherwise the Animald woudn't be displayed
 
         glMatrixMode(GL_MODELVIEW)
 
