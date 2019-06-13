@@ -24,6 +24,7 @@ def quit(root=None):
 def draw():
     """ draw points """
     global points
+    print("points: \n",points)
     for i in points:
         x, y = i[0], i[1]
         p = can.create_oval(x-HPSIZE, y-HPSIZE, x+HPSIZE, y+HPSIZE, fill=COLOR, outline=COLOR)
@@ -43,9 +44,7 @@ def rotYp():
     rotMat = np.array([[c, 0, -s], rotationAxis, [s, 0, c]])
 
     #v = theta * rotationAxis
-
     #r = np.array([[0, 0, v], [-v, 0, 0], [0, 0, 0]])
-
     #points = [p + np.dot(p, r) for p in points]
 
     points = np.dot(points, rotMat)
@@ -63,7 +62,7 @@ def rotYn():
 
     rotMat = np.array([[c, 0, -s], rotationAxis, [s, 0, c]])
 
-    points = [np.dot(p, rotMat) for p in points]
+    points = np.dot(points, rotMat)
 
     draw()
 

@@ -19,7 +19,7 @@ def init(width, height):
    glMatrixMode(GL_MODELVIEW)               #switch to modelview matrix
 
    #Camera
-   gluPerspective(30, 1, 1, 50)
+   gluPerspective(15, 1, 1, 50)
    gluLookAt(0, 0, 4, 0, 0, 0, 0, 1, 0)
 
 
@@ -113,7 +113,7 @@ def process_input(filepath):
 
    #scale in to[-1, 1]^3 | scale factor is 2/maxDiagonal
    maxDiagonal = max([bbox["right"] - bbox["left"], bbox["top"] - bbox["bottom"], bbox["far"] - bbox["near"]])
-   points = points * (2.0 / maxDiagonal)
+   points = points / maxDiagonal
 
 
 def main():

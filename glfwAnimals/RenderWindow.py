@@ -41,10 +41,12 @@ class Scene():
     # initialization
     def __init__(self, width, height, filepath):
         self.color = (1.0, 0, 0)
-        self.angle = 0.
-        self.axis = np.array([0., 1., 0.])
+        self.angle = 0.0
+        self.axis = np.array([0.0, 1.0, 0.0])
         self.width = width
         self.height = height
+        self.zoomf = 50
+        self.actOri = 1.0
         glEnable(GL_LIGHTING)
         glEnable(GL_COLOR_MATERIAL)
         glEnable(GL_LIGHT0)
@@ -62,6 +64,7 @@ class Scene():
         myVBO = vbo.VBO(np.array(vboList, 'f'))
         myVBO.bind()
 
+        glMultMatrixf(self.actOri * self.rotate(self.angle, self.axis))#rotation
 
         glEnableClientState(GL_VERTEX_ARRAY)
         glEnableClientState(GL_NORMAL_ARRAY)
@@ -80,6 +83,26 @@ class Scene():
 
     def setColor(self, color):
         self.color = color
+
+    def rotate(self, angle, axis):
+        c, mc = np.cos(angle), 1-np.cos(angle)
+        s = np.sin(angle)
+        l = np.sqrt(np.dot(np.array(axis), np.array(axis)))
+        x, y, z = np.array(axis)/l
+        r = np.array(
+            [[x*x*mc+c, x*y*mc-z*s, x*z*mc+y*s, 0],
+             [x*y*mc+z*s, y*y*mc+c, y*z*mc-x*s, 0],
+             [x*z*mc-y*s, y*z*mc+x*s, z*z*mc+c, 0],
+             [0, 0, 0, 1]])
+        #OpenGL uses column major order
+        #-> transpose matrix
+        return r.transpose()
+
+    def zoom(self, factor): #FIXME 1
+        f = 0
+        f = 1 + factor / 100
+        glScale(f, f, f)
+
 
 
 
@@ -132,26 +155,78 @@ class RenderWindow():
 
         # set window callbacks
         glfw.set_mouse_button_callback(self.window, self.onMouseButton)
+        glfw.set_cursor_pos_callback(self.window, self.onMouseMove)
         glfw.set_key_callback(self.window, self.onKeyboard)
         glfw.set_window_size_callback(self.window, self.onSize)
         
         # create 3D
         self.scene = Scene(self.width, self.height, filepath)
-        
+
+        self.pressed = False
+        self.leftMouse = False
+        self.rightMouse = False
+        self.p1 = None
+
         # exit flag
         self.exitNow = False
 
-    
-    
+
+    def projectOnSphere(self, x, y, r):
+        x, y = x-self.width/2.0, self.height/2.0-y
+        a = min(r*r, x**2 + y**2)
+        z = np.sqrt(r*r - a)
+        l = np.sqrt(x**2 + y**2 + z**2)
+        return x/l, y/l, z/l
+
+    def onMouseMove(self, win, x, y):
+        if self.pressed:
+            print("mouse move: ", win, x, y)
+
+            if self.leftMouse:
+                r = min(self.width, self.height) / 2.0
+
+                if self.p1 == None:
+                    self.p1 = self.projectOnSphere(x, y, r)
+
+                moveP = self.projectOnSphere(x, y, r)
+                self.scene.angle = np.arccos(np.dot(self.p1, moveP))
+                self.scene.axis = np.cross(self.p1, moveP)
+                glutPostRedisplay() #FIXME 2
+
     def onMouseButton(self, win, button, action, mods):
         print("mouse button: ", win, button, action, mods)
         if action == glfw.PRESS:
+            self.pressed = True
             if button == glfw.MOUSE_BUTTON_LEFT:
-                print("I should rotate now.")
+                print("I should rotate ...")
+                self.leftMouse = True
+
             if button == glfw.MOUSE_BUTTON_MIDDLE:
-                print("Zoom in zoom out.")
+                print("Zoom in ...")
+                self.scene.zoom(self.scene.zoomf)
+
             if button == glfw.MOUSE_BUTTON_RIGHT:
                 print("Move your body.")
+
+
+        elif action == glfw.RELEASE:
+            self.pressed = False
+            if button == glfw.MOUSE_BUTTON_LEFT:
+                print("... now.")
+                self.leftMouse = False
+                self.scene.actOri = self.scene.actOri * self.scene.rotate(self.scene.angle, self.scene.axis)
+                self.scene.angle = 0
+                self.p1 = None
+
+            if button == glfw.MOUSE_BUTTON_MIDDLE:
+                print("... zoom out.")
+                self.scene.zoom(-self.scene.zoomf/2) #FIXME 1
+
+
+            if button == glfw.MOUSE_BUTTON_RIGHT:
+                print("Move your body.")
+
+
 
 
     def onKeyboard(self, win, key, scancode, action, mods):
