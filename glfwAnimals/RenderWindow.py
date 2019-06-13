@@ -91,6 +91,7 @@ class Scene():
 
         if l == 0:
             print("l : ", l, "\naxis: ", axis, "\n")
+
             x, y, z = np.array([0.0, 1.0, 0.0])/1.0
         else:
             x, y, z = np.array(axis) / l
@@ -162,6 +163,7 @@ class RenderWindow():
         # set window callbacks
         glfw.set_mouse_button_callback(self.window, self.onMouseButton)
         glfw.set_cursor_pos_callback(self.window, self.onMouseMove)
+        glfw.set_scroll_callback(self.window, self.onScroll)
         glfw.set_key_callback(self.window, self.onKeyboard)
         glfw.set_window_size_callback(self.window, self.onSize)
         
@@ -170,12 +172,12 @@ class RenderWindow():
 
         self.pressed = False
         self.leftMouse = False
+        self.middleMouse = False
         self.rightMouse = False
         self.p1 = None
 
         # exit flag
         self.exitNow = False
-
 
     def projectOnSphere(self, x, y, r):
         x, y = x-self.width/2.0, self.height/2.0-y
@@ -184,9 +186,14 @@ class RenderWindow():
         l = np.sqrt(x**2 + y**2 + z**2)
         return x/l, y/l, z/l
 
+    def onScroll(self, win, x, y):
+        #print("args: ", win, x, y)
+        self.scene.zoom(y)
+
     def onMouseMove(self, win, x, y):
         if self.pressed:
             print("mouse move: ", win, x, y)
+
 
             if self.leftMouse:
                 r = min(self.width, self.height) / 2.0
@@ -195,9 +202,23 @@ class RenderWindow():
                     self.p1 = self.projectOnSphere(x, y, r)
 
                 moveP = self.projectOnSphere(x, y, r)
+
                 self.scene.angle = np.arccos(np.dot(self.p1, moveP))
                 self.scene.axis = np.cross(self.p1, moveP)
-                glutPostRedisplay() #FIXME 2
+
+                #FIXME self.scene.angle = 0 sonst hört die rotation nicht mehr auf
+
+
+            elif self.middleMouse:
+                if self.p1 == None:
+                    self.p1 = (x, y)
+
+                if (self.p1[1] - y) > 0:
+                    self.scene.zoom(1)
+                elif (self.p1[1] - y) < 0:
+                    self.scene.zoom(-1)
+
+
 
     def onMouseButton(self, win, button, action, mods):
         print("mouse button: ", win, button, action, mods)
@@ -207,31 +228,32 @@ class RenderWindow():
                 print("I should rotate ...")
                 self.leftMouse = True
 
-            if button == glfw.MOUSE_BUTTON_MIDDLE:
+            elif button == glfw.MOUSE_BUTTON_MIDDLE:
                 print("Zoom in ...")
-                self.scene.zoom(self.scene.zoomf)
+                self.middleMouse = True
 
-            if button == glfw.MOUSE_BUTTON_RIGHT:
+            elif button == glfw.MOUSE_BUTTON_RIGHT:
                 print("Move your body.")
-
+                self.rightMouse = True
 
         elif action == glfw.RELEASE:
             self.pressed = False
             if button == glfw.MOUSE_BUTTON_LEFT:
                 print("... now.")
                 self.leftMouse = False
-                self.scene.actOri = self.scene.actOri * self.scene.rotate(self.scene.angle, self.scene.axis)
+                #self.scene.actOri = self.scene.actOri * self.scene.rotate(self.scene.angle, self.scene.axis)
+                #self.scene.actOri * self.scene.rotate(self.scene.angle, self.scene.axis)
                 self.scene.angle = 0
                 self.p1 = None
 
-            if button == glfw.MOUSE_BUTTON_MIDDLE:
+            elif button == glfw.MOUSE_BUTTON_MIDDLE:
                 print("... zoom out.")
-                self.scene.zoom(-self.scene.zoomf/2) #FIXME 1
+                self.middleMouse = False
+                self.p1 = None
 
-
-            if button == glfw.MOUSE_BUTTON_RIGHT:
+            elif button == glfw.MOUSE_BUTTON_RIGHT:
                 print("Move your body.")
-
+                self.rightMouse = False
 
 
 
@@ -314,7 +336,7 @@ class RenderWindow():
 # main() function
 def main():
     print("Simple glfw render Window")
-    rw = RenderWindow("bunny.obj")
+    rw = RenderWindow("cow.obj")
     rw.run()
 
 
