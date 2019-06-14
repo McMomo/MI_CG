@@ -46,7 +46,7 @@ class Scene():
         self.axis = np.array([0.0, 1.0, 0.0])
         self.width = width
         self.height = height
-        self.zoomf = 50
+        self.zoomf = 0
         self.actOri = 1.0
         glEnable(GL_LIGHTING)
         glEnable(GL_COLOR_MATERIAL)
@@ -113,9 +113,18 @@ class Scene():
         #-> transpose matrix
         return r.transpose()
 
-    def zoom(self, factor):
-        f = 1 + factor / 100
-        glScale(f, f, f)
+    def zoom(self, factor): # führt bei schnellem scrollen zu fehlern
+        self.zoomf = self.zoomf + factor
+        print(self.zoomf)
+        max_zoom = 500
+        if abs(self.zoomf) < max_zoom:
+            f = 1 + factor / 100
+            glScale(f, f, f)
+        elif self.zoomf < -max_zoom:
+            self.zoomf = -max_zoom
+        elif self.zoomf > max_zoom:
+            self.zoomf = max_zoom
+
 
     def move(self, moveTo):
         x, y = moveTo
@@ -222,7 +231,7 @@ class RenderWindow():
                 else: # umgeht den l = 0 axis = [0, 0, 0] fehler wenn p1 == moveP taucht dieser auf
                     moveP = self.projectOnSphere(x, y, r)
 
-                    print("p1: ", self.p1,"\nmoveP: ", moveP)
+                    #print("p1: ", self.p1,"\nmoveP: ", moveP)
                     self.scene.angle = np.arccos(np.dot(self.p1, moveP))
                     self.scene.axis = np.cross(self.p1, moveP)
 
@@ -262,21 +271,21 @@ class RenderWindow():
         if action == glfw.PRESS:
             self.pressed = True
             if button == glfw.MOUSE_BUTTON_LEFT:
-                print("I should rotate ...")
+                #print("I should rotate ...")
                 self.leftMouse = True
 
             elif button == glfw.MOUSE_BUTTON_MIDDLE:
-                print("Zoom in ...")
+                #print("Zoom in ...")
                 self.middleMouse = True
 
             elif button == glfw.MOUSE_BUTTON_RIGHT:
-                print("Move your body.")
+                #print("Move your body.")
                 self.rightMouse = True
 
         elif action == glfw.RELEASE:
             self.pressed = False
             if button == glfw.MOUSE_BUTTON_LEFT:
-                print("... now.")
+                #print("... now.")
                 self.leftMouse = False
                 #self.scene.actOri = self.scene.actOri * self.scene.rotate(self.scene.angle, self.scene.axis)
                 #self.scene.actOri * self.scene.rotate(self.scene.angle, self.scene.axis)
@@ -284,12 +293,12 @@ class RenderWindow():
                 self.p1 = None
 
             elif button == glfw.MOUSE_BUTTON_MIDDLE:
-                print("... zoom out.")
+                #print("... zoom out.")
                 self.middleMouse = False
                 self.p1 = None
 
             elif button == glfw.MOUSE_BUTTON_RIGHT:
-                print("Move your body.")
+                #print("Move your body.")
                 self.rightMouse = False
                 self.p1 = None
 
@@ -359,10 +368,9 @@ class RenderWindow():
 
 
         else:
+            #FIXME = FAKE NEWS
             gluPerspective(120, 1, 1, 100)
-            gluLookAt(4, 0, 4,
-                      0, 0, 0,
-                      0, 1, 0)
+            gluLookAt(4, 0, 4, 0, 0, 0, 0, 1, 0)
             self.scene.zoom(450)
 
 
