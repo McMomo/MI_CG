@@ -41,6 +41,7 @@ class Scene():
     # initialization
     def __init__(self, width, height, filepath):
         self.color = (1.0, 0, 0)
+        self.background = (1.0, 1.0, 1.0, 1.0)
         self.angle = 0.0
         self.axis = np.array([0.0, 1.0, 0.0])
         self.width = width
@@ -66,6 +67,10 @@ class Scene():
 
         glMultMatrixf(self.actOri * self.rotate(self.angle, self.axis))#rotation
 
+        self.angle = 0.0
+        #self.axis = np.array([0.0, 1.0, 0.0])
+        #self.actOri = 1.0
+
         glEnableClientState(GL_VERTEX_ARRAY)
         glEnableClientState(GL_NORMAL_ARRAY)
 
@@ -81,15 +86,18 @@ class Scene():
         glDisableClientState(GL_NORMAL_ARRAY)
         glFlush()
 
-    def setColor(self, color):
-        self.color = color
+    def setColor(self, color, background):
+        if background:
+            glClearColor(color[0], color[1], color[2], 1.0)
+        else:
+            self.color = color
 
     def rotate(self, angle, axis):
         c, mc = np.cos(angle), 1-np.cos(angle)
         s = np.sin(angle)
         l = np.sqrt(np.dot(np.array(axis), np.array(axis)))
 
-        if l == 0:
+        if l == 0.0:
             print("l : ", l, "\naxis: ", axis, "\n")
 
             x, y, z = np.array([0.0, 1.0, 0.0])/1.0
@@ -105,10 +113,14 @@ class Scene():
         #-> transpose matrix
         return r.transpose()
 
-    def zoom(self, factor): #FIXME 1
-        f = 0
+    def zoom(self, factor):
         f = 1 + factor / 100
         glScale(f, f, f)
+
+    def move(self, moveTo):
+        x, y = moveTo
+        z = 0
+        glTranslate(x, y, z)
 
 
 
@@ -139,6 +151,9 @@ class RenderWindow():
         # define desired frame rate
         self.frame_rate = 100
 
+        # True = othogonal & False = central
+        self.projection = True
+
         # make a window
         self.width, self.height = 640, 480
         self.aspect = self.width/float(self.height)
@@ -156,7 +171,6 @@ class RenderWindow():
         glClearColor(1.0, 1.0, 1.0, 1.0) #Background Color
         glMatrixMode(GL_PROJECTION)
 
-        self.onSize(self.window, self.width, self.height) #Otherwise the Animald woudn't be displayed
 
         glMatrixMode(GL_MODELVIEW)
 
@@ -170,6 +184,10 @@ class RenderWindow():
         # create 3D
         self.scene = Scene(self.width, self.height, filepath)
 
+        # Otherwise the Animald woudn't be displayed
+        self.onSize(self.window, self.width, self.height)
+
+        self.background = False
         self.pressed = False
         self.leftMouse = False
         self.middleMouse = False
@@ -186,13 +204,14 @@ class RenderWindow():
         l = np.sqrt(x**2 + y**2 + z**2)
         return x/l, y/l, z/l
 
+
     def onScroll(self, win, x, y):
         #print("args: ", win, x, y)
         self.scene.zoom(y)
 
     def onMouseMove(self, win, x, y):
         if self.pressed:
-            print("mouse move: ", win, x, y)
+            #print("mouse move: ", win, x, y)
 
 
             if self.leftMouse:
@@ -200,14 +219,15 @@ class RenderWindow():
 
                 if self.p1 == None:
                     self.p1 = self.projectOnSphere(x, y, r)
+                else: # umgeht den l = 0 axis = [0, 0, 0] fehler wenn p1 == moveP taucht dieser auf
+                    moveP = self.projectOnSphere(x, y, r)
 
-                moveP = self.projectOnSphere(x, y, r)
+                    print("p1: ", self.p1,"\nmoveP: ", moveP)
+                    self.scene.angle = np.arccos(np.dot(self.p1, moveP))
+                    self.scene.axis = np.cross(self.p1, moveP)
 
-                self.scene.angle = np.arccos(np.dot(self.p1, moveP))
-                self.scene.axis = np.cross(self.p1, moveP)
-
-                #FIXME self.scene.angle = 0 sonst hört die rotation nicht mehr auf
-
+                #weil jede bewegung vom letzten Punkt aus berechnet werden soll und nicht vom ersten punkt aus
+                self.p1 = self.projectOnSphere(x, y, r)
 
             elif self.middleMouse:
                 if self.p1 == None:
@@ -217,6 +237,23 @@ class RenderWindow():
                     self.scene.zoom(1)
                 elif (self.p1[1] - y) < 0:
                     self.scene.zoom(-1)
+
+            elif self.rightMouse: # nach rotation verhält sich bewegung "falsch"
+                if self.p1 == None:
+                    self.p1 = (x, y)
+
+                difX = (x - self.p1[0]) #warum x -
+                difY = (self.p1[1] - y) #und - y ??
+
+                moveX = difX/self.width
+                moveY = difY/self.height
+
+                self.scene.move((moveX, moveY))
+
+                #jede bewegung wird berechnet
+                self.p1 = (x, y)
+
+
 
 
 
@@ -243,7 +280,7 @@ class RenderWindow():
                 self.leftMouse = False
                 #self.scene.actOri = self.scene.actOri * self.scene.rotate(self.scene.angle, self.scene.axis)
                 #self.scene.actOri * self.scene.rotate(self.scene.angle, self.scene.axis)
-                self.scene.angle = 0
+                #self.scene.angle = 0
                 self.p1 = None
 
             elif button == glfw.MOUSE_BUTTON_MIDDLE:
@@ -254,58 +291,80 @@ class RenderWindow():
             elif button == glfw.MOUSE_BUTTON_RIGHT:
                 print("Move your body.")
                 self.rightMouse = False
+                self.p1 = None
 
 
 
     def onKeyboard(self, win, key, scancode, action, mods):
-        print("keyboard: ", win, key, scancode, action, mods)
+        #print("keyboard: ", win, key, scancode, action, mods)
         if action == glfw.PRESS:
             # ESC to quit
             if key == glfw.KEY_ESCAPE:
                 self.exitNow = True
 
+            if key == glfw.KEY_Q:
+                self.exitNow = True
+
             if key == glfw.KEY_O:
                 print("Now, i should switch to othogonal-projection")
+                self.projection = True
+                self.onSize(self.window, self.width, self.height)
+
             if key == glfw.KEY_P:
                 print("Now, i should switch to central-projection")
+                self.projection = False
+                self.onSize(self.window, self.width, self.height)
 
-            if key == glfw.KEY_F:
-                self.focus = not self.focus
+            if key == glfw.KEY_F: #press this to switch background color
+                self.background = not self.background
 
             if key == glfw.KEY_S:
-                print("Switch color to black")
-                self.scene.setColor((0.0, 0.0, 0.0))
+                #print("Switch color to black")
+                self.scene.setColor((0.0, 0.0, 0.0), self.background)
             if key == glfw.KEY_W:
-                print("Switch color to white")
-                self.scene.setColor((1.0, 1.0, 1.0))
+                #print("Switch color to white")
+                self.scene.setColor((1.0, 1.0, 1.0), self.background)
             if key == glfw.KEY_R:
-                print("Switch color to red")
-                self.scene.setColor((1.0, 0.0, 0.0))
+                #print("Switch color to red")
+                self.scene.setColor((1.0, 0.0, 0.0), self.background)
             if key == glfw.KEY_B:
-                print("Switch color to blue")
-                self.scene.setColor((0.0, 0.0, 1.0))
+                #print("Switch color to blue")
+                self.scene.setColor((0.0, 0.0, 1.0), self.background)
             if key == glfw.KEY_G:
-                print("Switch color to yellow")
-                self.scene.setColor((1.0, 1.0, 0.0))
+                #print("Switch color to yellow")
+                self.scene.setColor((1.0, 1.0, 0.0), self.background)
 
 
 
     def onSize(self, win, width, height):
-        print("onsize: ", win, width, height)
+        #print("onsize: ", win, width, height)
         self.width = width
         self.height = height
         self.aspect = width/float(height)
         glViewport(0, 0, self.width, self.height)
         glMatrixMode(GL_PROJECTION)
         glLoadIdentity()
-        if width <= height:
-            glOrtho(-1.5, 1.5,
-                    -1.5 * height / width, 1.5 * height / width,
-                    -1.0, 1.0)
+
+        xl, xr, yb, yt, zn, zf = self.scene.objectPars.bbox.getBBox()
+
+        if self.projection:
+            if width <= height:
+                glOrtho(-1.5, 1.5,
+                        -1.5 * height / width, 1.5 * height / width,
+                        -4.0, 10.0)
+            else:
+                glOrtho(-1.5 * width / height, 1.5 * width / height,
+                        -1.5, 1.5,
+                        -4.0, 10.0)
+
+
         else:
-            glOrtho(-1.5 * width / height, 1.5 * width / height,
-                    -1.5, 1.5,
-                    -1.0, 1.0)
+            gluPerspective(80, 1, 1, 100)
+            gluLookAt(0, 0, 4,
+                      0, 0, 0,
+                      0, 1, 0)
+
+
         glMatrixMode(GL_MODELVIEW)
     
 

@@ -9,11 +9,14 @@ class ObjParser():
         self.normals = []
         self.faces = []
         self.filepath = filepath
+        self.bbox = None
         self.parseObj()
 
 
     def parseObj(self):
         objFile = open(self.filepath)
+
+        objFile = self.sortFile(objFile) #damit die Reihenfolge v - vt - vn - f gewährleistet werden kann
 
         for line in objFile:
 
@@ -92,7 +95,30 @@ class ObjParser():
 
 
     def initBBox(self):
-        bbox = BBox(self.vertices)
-        bbox.move_to_origin()
-        bbox.scale_to_kanonisches_Sichtvolumen()
-        self.vertices =  bbox.points
+        self.bbox = BBox(self.vertices)
+        self.bbox.move_to_origin()
+        self.bbox.scale_to_kanonisches_Sichtvolumen()
+        self.vertices =  self.bbox.points
+
+    def sortFile(self, file):
+        v = []
+        vt = []
+        vn = []
+        f = []
+        for line in file:
+            if(line.startswith("v ")):
+                v.append(line)
+            elif(line.startswith("vt ")):
+                vt.append(line)
+            elif(line.startswith("vn ")):
+                vn.append(line)
+            elif(line.startswith("f ")):
+                f.append(line)
+
+        sortedFile = []
+        sortedFile.extend(v)
+        sortedFile.extend(vt)
+        sortedFile.extend(vn)
+        sortedFile.extend(f)
+
+        return sortedFile
