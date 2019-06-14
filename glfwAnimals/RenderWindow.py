@@ -359,10 +359,11 @@ class RenderWindow():
 
 
         else:
-            gluPerspective(80, 1, 1, 100)
-            gluLookAt(0, 0, 4,
+            gluPerspective(120, 1, 1, 100)
+            gluLookAt(4, 0, 4,
                       0, 0, 0,
                       0, 1, 0)
+            self.scene.zoom(450)
 
 
         glMatrixMode(GL_MODELVIEW)
