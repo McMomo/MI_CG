@@ -20,7 +20,7 @@ class BBox():
                 n = face[0]
                 self.points.append(self.normals[n])
 
-
+    def calcBbox(self):
         # Bounding Box
         vecX = [vec[0] for vec in self.points]
         vecY = [vec[1] for vec in self.points]
@@ -43,5 +43,3 @@ class BBox():
     def scale_to_kanonisches_Sichtvolumen(self): # scale to [-1, 1]^3
         self.points = self.points * (2.0 /max([self.right - self.left, self.top - self.bottom, self.far - self.near]))
 
-    def getBBox(self):
-        return (self.left, self.right, self.bottom, self.top, self.near, self.far)

@@ -16,7 +16,7 @@ class ObjParser():
     def parseObj(self):
         objFile = open(self.filepath)
 
-        objFile = self.sortFile(objFile) #damit die Reihenfolge v - vt - vn - f gewährleistet werden kann
+        objFile = self.sortFile(objFile)
 
         for line in objFile:
 
@@ -96,10 +96,14 @@ class ObjParser():
 
     def initBBox(self):
         self.bbox = BBox(self.vertices)
+        self.bbox.calcBbox()
         self.bbox.move_to_origin()
         self.bbox.scale_to_kanonisches_Sichtvolumen()
         self.vertices =  self.bbox.points
+        self.bbox.calcBbox()
 
+
+    # damit die Reihenfolge v - vt - vn - f gewährleistet werden kann
     def sortFile(self, file):
         v = []
         vt = []

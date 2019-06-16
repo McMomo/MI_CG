@@ -41,13 +41,14 @@ class Scene():
     # initialization
     def __init__(self, width, height, filepath):
         self.color = (1.0, 0, 0)
-        self.background = (1.0, 1.0, 1.0, 1.0)
+        #self.background = (1.0, 1.0, 1.0, 1.0)
         self.angle = 0.0
         self.axis = np.array([0.0, 1.0, 0.0])
         self.width = width
         self.height = height
         self.zoomf = 0
         self.actOri = 1.0
+        self.shadow = True
         glEnable(GL_LIGHTING)
         glEnable(GL_COLOR_MATERIAL)
         glEnable(GL_LIGHT0)
@@ -57,7 +58,7 @@ class Scene():
         self.objectPars = ObjParser(filepath)
 
     # render 
-    def render(self):
+    def render(self, shadowFlag): # bool in render da die Flexiblität von self. in dem Fall schlecht ist
         global myVBO
 
         glClear(GL_COLOR_BUFFER_BIT)
@@ -67,9 +68,26 @@ class Scene():
 
         glMultMatrixf(self.actOri * self.rotate(self.angle, self.axis))#rotation
 
+
+        #print(type(self.actOri))
+        if type(self.actOri) is np.ndarray:
+            #print(self.actOri)
+            tmpOri = []
+            tmpOri.extend(self.actOri[0])
+            tmpOri.extend(self.actOri[1])
+            tmpOri.extend(self.actOri[2])
+            tmpOri.extend(self.actOri[3])
+            self.actOri = tmpOri
+            print(tmpOri)
+
+            #self.axis =
+            #self.axis = np.array(tmpOri)
+            glMultMatrixf(self.actOri)
+            #np.multiply(self.axis * self.actOri)
+
         self.angle = 0.0
         #self.axis = np.array([0.0, 1.0, 0.0])
-        #self.actOri = 1.0
+        self.actOri = 1.0
 
         glEnableClientState(GL_VERTEX_ARRAY)
         glEnableClientState(GL_NORMAL_ARRAY)
@@ -78,13 +96,54 @@ class Scene():
         glNormalPointer(GL_FLOAT, 24, myVBO + 12)
 
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL)
-        glColor3f(self.color[0], self.color[1], self.color[2])
+
+        #print(shadowFlag)
+        if shadowFlag:
+            glColor3fv([0.75, 0.75, 0.75])
+        else:
+            glColor3f(self.color[0], self.color[1], self.color[2])
+
         glDrawArrays(GL_TRIANGLES, 0, len(vboList))
 
         myVBO.unbind()
         glDisableClientState(GL_VERTEX_ARRAY)
         glDisableClientState(GL_NORMAL_ARRAY)
+
         glFlush()
+
+    def shadowRender(self):
+
+        light = [-5, -5, -5]
+        p = [1.0, 0, 0, 0, 0, 1.0, 0, -1.0/light[1], 0, 0, 1.0, 0, 0, 0, 0, 0]
+
+        #self.shadow = False
+        self.render(not self.shadow)#render
+
+        glMatrixMode(GL_MODELVIEW)
+        glPushMatrix()
+
+        glTranslatef(light[0], light[1], light[2])
+
+        glMultMatrixf(p)
+
+        glTranslatef(-light[0], -light[1], -light[2])
+
+        xright = self.objectPars.bbox.right
+        xleft = self.objectPars.bbox.left
+        ybottom = self.objectPars.bbox.bottom
+        ytop = self.objectPars.bbox.top
+
+        #glTranslatef(0, xright, 0)
+
+        #glColor3fv([0.75, 0.75, 0.75])
+
+        #self.shadow = True
+        self.render(self.shadow)#render again
+        #self.shadow = False
+
+        glPopMatrix()
+
+
 
     def setColor(self, color, background):
         if background:
@@ -92,17 +151,21 @@ class Scene():
         else:
             self.color = color
 
+
     def rotate(self, angle, axis):
         c, mc = np.cos(angle), 1-np.cos(angle)
         s = np.sin(angle)
         l = np.sqrt(np.dot(np.array(axis), np.array(axis)))
 
+        '''
+        Wird durch Z. 242 gefixt
         if l == 0.0:
             print("l : ", l, "\naxis: ", axis, "\n")
 
             x, y, z = np.array([0.0, 1.0, 0.0])/1.0
         else:
-            x, y, z = np.array(axis) / l
+        '''
+        x, y, z = np.array(axis) / l
 
         r = np.array(
             [[x*x*mc+c, x*y*mc-z*s, x*z*mc+y*s, 0],
@@ -115,11 +178,14 @@ class Scene():
 
     def zoom(self, factor): # führt bei schnellem scrollen zu fehlern
         self.zoomf = self.zoomf + factor
-        print(self.zoomf)
+        #print(self.zoomf)
         max_zoom = 500
+
         if abs(self.zoomf) < max_zoom:
             f = 1 + factor / 100
             glScale(f, f, f)
+
+
         elif self.zoomf < -max_zoom:
             self.zoomf = -max_zoom
         elif self.zoomf > max_zoom:
@@ -163,6 +229,18 @@ class RenderWindow():
         # True = othogonal & False = central
         self.projection = True
 
+        #Who run the world? Flags!
+        self.background = False
+        self.pressed = False
+        self.leftMouse = False
+        self.middleMouse = False
+        self.rightMouse = False
+        self.p1 = None
+
+        # exit flag
+        self.exitNow = False
+
+
         # make a window
         self.width, self.height = 640, 480
         self.aspect = self.width/float(self.height)
@@ -179,8 +257,6 @@ class RenderWindow():
         glEnable(GL_DEPTH_TEST)
         glClearColor(1.0, 1.0, 1.0, 1.0) #Background Color
         glMatrixMode(GL_PROJECTION)
-
-
         glMatrixMode(GL_MODELVIEW)
 
         # set window callbacks
@@ -190,21 +266,15 @@ class RenderWindow():
         glfw.set_key_callback(self.window, self.onKeyboard)
         glfw.set_window_size_callback(self.window, self.onSize)
         
-        # create 3D
+        # create Scene
         self.scene = Scene(self.width, self.height, filepath)
 
         # Otherwise the Animald woudn't be displayed
         self.onSize(self.window, self.width, self.height)
 
-        self.background = False
-        self.pressed = False
-        self.leftMouse = False
-        self.middleMouse = False
-        self.rightMouse = False
-        self.p1 = None
+        #"eye", otherwise you cant see the central
+        gluLookAt(0.0, 0.0, 2, 0, 0, 1.0, 0.0, 1.0, 0.0)
 
-        # exit flag
-        self.exitNow = False
 
     def projectOnSphere(self, x, y, r):
         x, y = x-self.width/2.0, self.height/2.0-y
@@ -228,6 +298,7 @@ class RenderWindow():
 
                 if self.p1 == None:
                     self.p1 = self.projectOnSphere(x, y, r)
+
                 else: # umgeht den l = 0 axis = [0, 0, 0] fehler wenn p1 == moveP taucht dieser auf
                     moveP = self.projectOnSphere(x, y, r)
 
@@ -247,7 +318,8 @@ class RenderWindow():
                 elif (self.p1[1] - y) < 0:
                     self.scene.zoom(-1)
 
-            elif self.rightMouse: # nach rotation verhält sich bewegung "falsch"
+            # nach 180° rotation ist die Bewegung gespiegelt
+            elif self.rightMouse:
                 if self.p1 == None:
                     self.p1 = (x, y)
 
@@ -285,20 +357,19 @@ class RenderWindow():
         elif action == glfw.RELEASE:
             self.pressed = False
             if button == glfw.MOUSE_BUTTON_LEFT:
-                #print("... now.")
+
                 self.leftMouse = False
-                #self.scene.actOri = self.scene.actOri * self.scene.rotate(self.scene.angle, self.scene.axis)
-                #self.scene.actOri * self.scene.rotate(self.scene.angle, self.scene.axis)
-                #self.scene.angle = 0
                 self.p1 = None
 
+                self.scene.actOri = self.scene.actOri * self.scene.rotate(self.scene.angle, self.scene.axis)
+                #self.scene.actOri * self.scene.rotate(self.scene.angle, self.scene.axis)
+                #self.scene.angle = 0
+
             elif button == glfw.MOUSE_BUTTON_MIDDLE:
-                #print("... zoom out.")
                 self.middleMouse = False
                 self.p1 = None
 
             elif button == glfw.MOUSE_BUTTON_RIGHT:
-                #print("Move your body.")
                 self.rightMouse = False
                 self.p1 = None
 
@@ -307,10 +378,11 @@ class RenderWindow():
     def onKeyboard(self, win, key, scancode, action, mods):
         #print("keyboard: ", win, key, scancode, action, mods)
         if action == glfw.PRESS:
+
             # ESC to quit
             if key == glfw.KEY_ESCAPE:
                 self.exitNow = True
-
+            # Q to quit
             if key == glfw.KEY_Q:
                 self.exitNow = True
 
@@ -343,6 +415,10 @@ class RenderWindow():
                 #print("Switch color to yellow")
                 self.scene.setColor((1.0, 1.0, 0.0), self.background)
 
+            #shadow flag
+            if key == glfw.KEY_H:
+                self.scene.shadow = not self.scene.shadow
+                self.onSize(self.window, self.width, self.height) #FIXME
 
 
     def onSize(self, win, width, height):
@@ -353,8 +429,6 @@ class RenderWindow():
         glViewport(0, 0, self.width, self.height)
         glMatrixMode(GL_PROJECTION)
         glLoadIdentity()
-
-        xl, xr, yb, yt, zn, zf = self.scene.objectPars.bbox.getBBox()
 
         if self.projection:
             if width <= height:
@@ -368,11 +442,18 @@ class RenderWindow():
 
 
         else:
-            #FIXME = FAKE NEWS
-            gluPerspective(120, 1, 1, 100)
-            gluLookAt(4, 0, 4, 0, 0, 0, 0, 1, 0)
-            self.scene.zoom(450)
-
+            if self.width <= self.height:
+                glFrustum(
+                    -0.1, 0.1,
+                    -0.1 * height / width, 0.1 * height / width,
+                    0.1, 10.0
+                )
+            else:
+                glFrustum(
+                    -0.1 * width / height, 0.1 * width / height,
+                    -0.1, 0.1,
+                    0.1, 10.0
+                )
 
         glMatrixMode(GL_MODELVIEW)
     
@@ -389,9 +470,12 @@ class RenderWindow():
                 t = currT
                 # clear
                 glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
-                
+
+                if self.scene.shadow:
+                    self.scene.shadowRender()
+                else:
                 # render scene
-                self.scene.render()
+                    self.scene.render(False)
                 
                 glfw.swap_buffers(self.window)
                 # Poll for and process events
@@ -404,7 +488,7 @@ class RenderWindow():
 # main() function
 def main():
     print("Simple glfw render Window")
-    rw = RenderWindow("cow.obj")
+    rw = RenderWindow("elephant.obj")
     rw.run()
 
 
