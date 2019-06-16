@@ -49,6 +49,7 @@ class Scene():
         self.zoomf = 0
         self.actOri = 1.0
         self.shadow = True
+
         glEnable(GL_LIGHTING)
         glEnable(GL_COLOR_MATERIAL)
         glEnable(GL_LIGHT0)
@@ -57,11 +58,21 @@ class Scene():
 
         self.objectPars = ObjParser(filepath)
 
+
     # render 
     def render(self, shadowFlag): # bool in render da die Flexiblität von self. in dem Fall schlecht ist
         global myVBO
 
-        glClear(GL_COLOR_BUFFER_BIT)
+        glTranslatef(0,-self.objectPars.bbox.bottom, 0)
+
+
+        if not shadowFlag:
+            glClear(GL_COLOR_BUFFER_BIT)
+            #glEnable(GL_DEPTH_TEST)
+        #else:
+            #glDisable(GL_DEPTH_TEST) # Schatten über dem Model ?
+
+
         vboList = self.objectPars.getVboList()
         myVBO = vbo.VBO(np.array(vboList, 'f'))
         myVBO.bind()
@@ -109,9 +120,14 @@ class Scene():
         glDisableClientState(GL_VERTEX_ARRAY)
         glDisableClientState(GL_NORMAL_ARRAY)
 
+
+        glTranslatef(0,self.objectPars.bbox.bottom, 0)
+
+
         glFlush()
 
     def shadowRender(self):
+        glClear(GL_COLOR_BUFFER_BIT)
 
         light = [-5, -5, -5]
         p = [1.0, 0, 0, 0, 0, 1.0, 0, -1.0/light[1], 0, 0, 1.0, 0, 0, 0, 0, 0]
@@ -120,6 +136,13 @@ class Scene():
         self.render(not self.shadow)#render
 
         glMatrixMode(GL_MODELVIEW)
+
+        xright = self.objectPars.bbox.right
+        xleft = self.objectPars.bbox.left
+        ybottom = self.objectPars.bbox.bottom
+        ytop = self.objectPars.bbox.top
+        #glTranslatef(xright-xleft, ytop-ybottom, 0)
+
         glPushMatrix()
 
         glTranslatef(light[0], light[1], light[2])
@@ -128,10 +151,6 @@ class Scene():
 
         glTranslatef(-light[0], -light[1], -light[2])
 
-        xright = self.objectPars.bbox.right
-        xleft = self.objectPars.bbox.left
-        ybottom = self.objectPars.bbox.bottom
-        ytop = self.objectPars.bbox.top
 
         #glTranslatef(0, xright, 0)
 
@@ -142,6 +161,10 @@ class Scene():
         #self.shadow = False
 
         glPopMatrix()
+
+        #glTranslatef(0, ybottom, 0)
+
+        #glTranslatef(-(xright-xleft), -(ytop-ybottom), 0)
 
 
 
