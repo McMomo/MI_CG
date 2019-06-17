@@ -37,10 +37,8 @@ class ObjParser():
 
             elif (line.startswith("f ")):
 
-
                 if len(self.faces) == 0:
                     self.initBBox()
-
 
                 fLine = line.split()
 

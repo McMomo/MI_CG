@@ -75,7 +75,7 @@ class Scene():
 
         glMultMatrixf(self.actOri * self.rotate(self.angle, self.axis))#rotation
         self.angle = 0.0
-        self.actOri = 1.0
+        #self.actOri = 1.0
 
         glEnableClientState(GL_VERTEX_ARRAY)
         if not shadowFlag:
@@ -163,7 +163,6 @@ class Scene():
 
 
 
-
 class RenderWindow():
     """GLFW Rendering window class"""
     def __init__(self, filepath):
@@ -203,7 +202,6 @@ class RenderWindow():
 
         # exit flag
         self.exitNow = False
-
 
         # make a window
         self.width, self.height = 640, 480
@@ -252,13 +250,10 @@ class RenderWindow():
 
 
     def onScroll(self, win, x, y):
-        #print("args: ", win, x, y)
         self.scene.zoom(y)
 
     def onMouseMove(self, win, x, y):
         if self.pressed:
-            #print("mouse move: ", win, x, y)
-
 
             if self.leftMouse:
                 r = min(self.width, self.height) / 2.0
@@ -269,12 +264,12 @@ class RenderWindow():
                 else: # umgeht den l = 0 axis = [0, 0, 0] fehler wenn p1 == moveP taucht dieser auf
                     moveP = self.projectOnSphere(x, y, r)
 
-                    #print("p1: ", self.p1,"\nmoveP: ", moveP)
                     self.scene.angle = np.arccos(np.dot(self.p1, moveP))
                     self.scene.axis = np.cross(self.p1, moveP)
 
                 #weil jede bewegung vom letzten Punkt aus berechnet werden soll und nicht vom ersten punkt aus
                 self.p1 = self.projectOnSphere(x, y, r)
+
 
             elif self.middleMouse:
                 if self.p1 == None:
@@ -284,6 +279,7 @@ class RenderWindow():
                     self.scene.zoom(1)
                 elif (self.p1[1] - y) < 0:
                     self.scene.zoom(-1)
+
 
             # nach 180° rotation ist die Bewegung gespiegelt
             elif self.rightMouse:
@@ -304,11 +300,10 @@ class RenderWindow():
 
 
 
-
     def onMouseButton(self, win, button, action, mods):
-        print("mouse button: ", win, button, action, mods)
         if action == glfw.PRESS:
             self.pressed = True
+
             if button == glfw.MOUSE_BUTTON_LEFT:
                 #print("I should rotate ...")
                 self.leftMouse = True
@@ -323,14 +318,11 @@ class RenderWindow():
 
         elif action == glfw.RELEASE:
             self.pressed = False
-            if button == glfw.MOUSE_BUTTON_LEFT:
 
+            if button == glfw.MOUSE_BUTTON_LEFT:
                 self.leftMouse = False
                 self.p1 = None
-
-                self.scene.actOri = self.scene.actOri * self.scene.rotate(self.scene.angle, self.scene.axis)
-                #self.scene.actOri * self.scene.rotate(self.scene.angle, self.scene.axis)
-                #self.scene.angle = 0
+                #self.scene.actOri = self.scene.actOri * self.scene.rotate(self.scene.angle, self.scene.axis)
 
             elif button == glfw.MOUSE_BUTTON_MIDDLE:
                 self.middleMouse = False
@@ -343,7 +335,6 @@ class RenderWindow():
 
 
     def onKeyboard(self, win, key, scancode, action, mods):
-        #print("keyboard: ", win, key, scancode, action, mods)
         if action == glfw.PRESS:
 
             # ESC to quit
@@ -354,42 +345,38 @@ class RenderWindow():
                 self.exitNow = True
 
             if key == glfw.KEY_O:
-                print("Now, i should switch to othogonal-projection")
                 self.projection = True
                 self.onSize(self.window, self.width, self.height)
 
             if key == glfw.KEY_P:
-                print("Now, i should switch to central-projection")
                 self.projection = False
                 self.onSize(self.window, self.width, self.height)
+
 
             if key == glfw.KEY_F: #press this to switch background color
                 self.background = not self.background
 
             if key == glfw.KEY_S:
-                #print("Switch color to black")
                 self.scene.setColor((0.0, 0.0, 0.0), self.background)
+
             if key == glfw.KEY_W:
-                #print("Switch color to white")
                 self.scene.setColor((1.0, 1.0, 1.0), self.background)
+
             if key == glfw.KEY_R:
-                #print("Switch color to red")
                 self.scene.setColor((1.0, 0.0, 0.0), self.background)
+
             if key == glfw.KEY_B:
-                #print("Switch color to blue")
                 self.scene.setColor((0.0, 0.0, 1.0), self.background)
+
             if key == glfw.KEY_G:
-                #print("Switch color to yellow")
                 self.scene.setColor((1.0, 1.0, 0.0), self.background)
 
             #shadow flag
             if key == glfw.KEY_H:
                 self.scene.shadow = not self.scene.shadow
-                self.onSize(self.window, self.width, self.height) #FIXME
 
 
     def onSize(self, win, width, height):
-        #print("onsize: ", win, width, height)
         self.width = width
         self.height = height
         self.aspect = width/float(height)
@@ -438,10 +425,9 @@ class RenderWindow():
                 # clear
                 glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 
-                if self.scene.shadow:
+                if self.scene.shadow: # render scene with shadow
                     self.scene.shadowRender()
-                else:
-                # render scene
+                else: # render scene without shadow
                     self.scene.render(False)
                 
                 glfw.swap_buffers(self.window)
