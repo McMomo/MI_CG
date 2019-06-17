@@ -65,12 +65,8 @@ class Scene():
 
         glTranslatef(0,-self.objectPars.bbox.bottom, 0)
 
-
         if not shadowFlag:
             glClear(GL_COLOR_BUFFER_BIT)
-            #glEnable(GL_DEPTH_TEST)
-        #else:
-            #glDisable(GL_DEPTH_TEST) # Schatten über dem Model ?
 
 
         vboList = self.objectPars.getVboList()
@@ -78,37 +74,16 @@ class Scene():
         myVBO.bind()
 
         glMultMatrixf(self.actOri * self.rotate(self.angle, self.axis))#rotation
-
-
-        #print(type(self.actOri))
-        if type(self.actOri) is np.ndarray:
-            #print(self.actOri)
-            tmpOri = []
-            tmpOri.extend(self.actOri[0])
-            tmpOri.extend(self.actOri[1])
-            tmpOri.extend(self.actOri[2])
-            tmpOri.extend(self.actOri[3])
-            self.actOri = tmpOri
-            print(tmpOri)
-
-            #self.axis =
-            #self.axis = np.array(tmpOri)
-            glMultMatrixf(self.actOri)
-            #np.multiply(self.axis * self.actOri)
-
         self.angle = 0.0
-        #self.axis = np.array([0.0, 1.0, 0.0])
         self.actOri = 1.0
 
         glEnableClientState(GL_VERTEX_ARRAY)
-        glEnableClientState(GL_NORMAL_ARRAY)
-
+        if not shadowFlag:
+            glEnableClientState(GL_NORMAL_ARRAY)
         glVertexPointer(3, GL_FLOAT, 24, myVBO)
         glNormalPointer(GL_FLOAT, 24, myVBO + 12)
-
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL)
 
-        #print(shadowFlag)
         if shadowFlag:
             glColor3fv([0.75, 0.75, 0.75])
         else:
@@ -120,51 +95,26 @@ class Scene():
         glDisableClientState(GL_VERTEX_ARRAY)
         glDisableClientState(GL_NORMAL_ARRAY)
 
-
         glTranslatef(0,self.objectPars.bbox.bottom, 0)
-
 
         glFlush()
 
     def shadowRender(self):
         glClear(GL_COLOR_BUFFER_BIT)
-
         light = [-5, -5, -5]
         p = [1.0, 0, 0, 0, 0, 1.0, 0, -1.0/light[1], 0, 0, 1.0, 0, 0, 0, 0, 0]
 
-        #self.shadow = False
         self.render(not self.shadow)#render
 
         glMatrixMode(GL_MODELVIEW)
-
-        xright = self.objectPars.bbox.right
-        xleft = self.objectPars.bbox.left
-        ybottom = self.objectPars.bbox.bottom
-        ytop = self.objectPars.bbox.top
-        #glTranslatef(xright-xleft, ytop-ybottom, 0)
-
         glPushMatrix()
-
         glTranslatef(light[0], light[1], light[2])
-
         glMultMatrixf(p)
-
         glTranslatef(-light[0], -light[1], -light[2])
 
-
-        #glTranslatef(0, xright, 0)
-
-        #glColor3fv([0.75, 0.75, 0.75])
-
-        #self.shadow = True
         self.render(self.shadow)#render again
-        #self.shadow = False
 
         glPopMatrix()
-
-        #glTranslatef(0, ybottom, 0)
-
-        #glTranslatef(-(xright-xleft), -(ytop-ybottom), 0)
 
 
 
@@ -180,14 +130,6 @@ class Scene():
         s = np.sin(angle)
         l = np.sqrt(np.dot(np.array(axis), np.array(axis)))
 
-        '''
-        Wird durch Z. 242 gefixt
-        if l == 0.0:
-            print("l : ", l, "\naxis: ", axis, "\n")
-
-            x, y, z = np.array([0.0, 1.0, 0.0])/1.0
-        else:
-        '''
         x, y, z = np.array(axis) / l
 
         r = np.array(
@@ -201,14 +143,13 @@ class Scene():
 
     def zoom(self, factor): # führt bei schnellem scrollen zu fehlern
         self.zoomf = self.zoomf + factor
-        #print(self.zoomf)
         max_zoom = 500
 
         if abs(self.zoomf) < max_zoom:
             f = 1 + factor / 100
             glScale(f, f, f)
 
-
+        #Zoom limiter
         elif self.zoomf < -max_zoom:
             self.zoomf = -max_zoom
         elif self.zoomf > max_zoom:
@@ -297,6 +238,9 @@ class RenderWindow():
 
         #"eye", otherwise you cant see the central
         gluLookAt(0.0, 0.0, 2, 0, 0, 1.0, 0.0, 1.0, 0.0)
+
+        #Move animal in the middle of the Window
+        self.scene.move((0, self.scene.objectPars.bbox.bottom))
 
 
     def projectOnSphere(self, x, y, r):
