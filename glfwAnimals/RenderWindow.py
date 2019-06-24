@@ -67,25 +67,27 @@ class Scene():
 
         if not shadowFlag:
             glClear(GL_COLOR_BUFFER_BIT)
-
+            glEnable(GL_LIGHT0)
+        else:
+            glDisable(GL_LIGHT0)
 
         vboList = self.objectPars.getVboList()
         myVBO = vbo.VBO(np.array(vboList, 'f'))
         myVBO.bind()
 
-        glMultMatrixf(self.actOri * self.rotate(self.angle, self.axis))#rotation
+        glMultMatrixf(np.dot(self.actOri,self.rotate(self.angle, self.axis)))#rotation
         self.angle = 0.0
-        #self.actOri = 1.0
+        self.actOri = 1.0
 
         glEnableClientState(GL_VERTEX_ARRAY)
+        glVertexPointer(3, GL_FLOAT, 24, myVBO)
         if not shadowFlag:
             glEnableClientState(GL_NORMAL_ARRAY)
-        glVertexPointer(3, GL_FLOAT, 24, myVBO)
-        glNormalPointer(GL_FLOAT, 24, myVBO + 12)
+            glNormalPointer(GL_FLOAT, 24, myVBO + 12)
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL)
 
         if shadowFlag:
-            glColor3fv([0.75, 0.75, 0.75])
+            glColor3fv([1, 1, 1])
         else:
             glColor3f(self.color[0], self.color[1], self.color[2])
 
@@ -322,7 +324,7 @@ class RenderWindow():
             if button == glfw.MOUSE_BUTTON_LEFT:
                 self.leftMouse = False
                 self.p1 = None
-                #self.scene.actOri = self.scene.actOri * self.scene.rotate(self.scene.angle, self.scene.axis)
+                np.dot(self.scene.actOri, self.scene.rotate(self.scene.angle, self.scene.axis))
 
             elif button == glfw.MOUSE_BUTTON_MIDDLE:
                 self.middleMouse = False

@@ -64,6 +64,7 @@ class ObjParser():
                 points.append(self.vertices[index_vertices[1]])
                 points.append(self.vertices[index_vertices[2]])
 
+                #self.normals mit neune n füttern, falls schon vorhanden addieren falls nicht appenden
                 if (len(index_normals) == 0):
                     n = np.cross(points[2] - points[0],
                                      points[2] - points[1])
@@ -71,8 +72,9 @@ class ObjParser():
                     norms.append(n)
                     norms.append(n)
                     norms.append(n)
-
+                    #print(norms)
                 else:
+
                     norms.append(self.normals[index_normals[0]])
                     norms.append(self.normals[index_normals[1]])
                     norms.append(self.normals[index_normals[2]])
