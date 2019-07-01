@@ -443,7 +443,7 @@ class RenderWindow():
 # main() function
 def main():
     print("Simple glfw render Window")
-    rw = RenderWindow("elephant.obj")
+    rw = RenderWindow("cow.obj")
     rw.run()
 
 
