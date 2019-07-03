@@ -14,24 +14,27 @@ class Scene():
         self.counter = 0
 
     def render(self):
+        glClear(GL_COLOR_BUFFER_BIT)
         glClearColor(self.background[0],self.background[1],self.background[2],self.background[3])
 
         myVbo = vbo.VBO(np.array(self.points, 'f'))
         myVbo.bind()
 
         glEnableClientState(GL_VERTEX_ARRAY)
-        glVertexPointer(3, GL_FLOAT, 24, myVbo)
+        glVertexPointer(2, GL_FLOAT, 0, myVbo)
 
-        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE)
+        #glPolygonMode(GL_FRONT_AND_BACK, GL_LINE)
 
         glColor(self.color)
 
-        glDrawArrays(GL_LINE, 0, len(self.points))
+        # wenn ein punkt GL_POINT wenn mehr GL_LINE_STRIP
+        glDrawArrays(GL_POINTS, 0, len(self.points))
+        if len(self.points) > 1:
+            glDrawArrays(GL_LINE_STRIP, 0, len(self.points))
+
 
         myVbo.unbind()
         glDisableClientState(GL_VERTEX_ARRAY)
-        glDisableClientState(GL_NORMAL_ARRAY)
-
         glFlush()
 
 
@@ -122,6 +125,7 @@ class RenderWindow():
                 self.scene.points.append((x,y,))
                 self.scene.counter += 1
 
+                #render after glfw.RELEASE
                 self.scene.render()
 
     def keyboardCall(self, window, key, scancode, action, mods):
