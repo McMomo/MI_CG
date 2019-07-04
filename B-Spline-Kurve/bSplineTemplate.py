@@ -6,32 +6,6 @@ import numpy as np
 
 
 
-class BBox():
-    def __init__(self, points):
-        if type(points) is list or type(points) is np.ndarray:
-            self.points = points
-
-    def calcBbox(self):
-        # Bounding Box
-        vecX = [vec[0] for vec in self.points]
-        vecY = [vec[1] for vec in self.points]
-
-        self.right = max(vecX)
-        self.left = min(vecX)
-        self.top = max(vecY)
-        self.bottom = min(vecY)
-
-        print(self.right, self.left, self.top, self.bottom)
-
-
-    def move_to_origin(self):
-        return (self.points - np.array([np.median([self.right, self.left]),
-                                    np.median([self.top, self.bottom])])).tolist()
-
-    def scale_to_kanonisches_Sichtvolumen(self): # scale to [-1, 1]^3
-        self.points = self.points * (2.0 /max([self.right - self.left, self.top - self.bottom]))
-
-
 
 
 class Scene():
@@ -41,9 +15,9 @@ class Scene():
         self.color = [0.0, 1.0, 0.0]
         self.background = [1.0, 1.0, 1.0, 1.0]
         self.points = []
-        self.counter = 0
         self.degree = 4
-        self.bbox = None
+        self.curvepoints = 0
+        self.knotvector = []
 
 
     def render(self):
@@ -55,8 +29,6 @@ class Scene():
         glEnableClientState(GL_VERTEX_ARRAY)
         glVertexPointer(2, GL_FLOAT, 0, myVbo)
 
-        #glPolygonMode(GL_FRONT_AND_BACK, GL_LINE)
-
         glColor(self.color)
 
         # wenn ein punkt GL_POINT wenn mehr GL_LINE_STRIP
@@ -65,17 +37,29 @@ class Scene():
             glDrawArrays(GL_LINE_STRIP, 0, len(self.points))
 
 
+        #calc knotvector [kann eventuell nur aufgerufen werden wenn neuer punkt o.a veränderung kommt]
+        self.knotvector = []
+
+        points_len = len(self.points) - 1
+
+        if points_len < self.degree:
+            return
+
+        for t in range(self.degree):
+            self.knotvector.append(0.0)
+
+        for t in range(1, (points_len - (self.degree - 2))): #(n - (k - 2))
+            self.knotvector.append(t)
+
+        for t in range(self.degree):#(n - (k - 2))
+            self.knotvector.append((points_len - (self.degree - 2)))
+
+
+
         myVbo.unbind()
         glDisableClientState(GL_VERTEX_ARRAY)
 
         glFlush()
-
-
-    def updateBBox(self):
-        self.bbox = BBox(self.points)
-        self.bbox.calcBbox()
-        self.points = self.bbox.move_to_origin()
-        #self.bbox.scale_to_kanonisches_Sichtvolumen()
 
 
     def deboor(self, degree, controlpoints, knotvector, t):
@@ -109,7 +93,7 @@ class RenderWindow():
         # make a window
         self.width, self.height = 640, 480
         self.aspect = self.width / float(self.height)
-        self.window = glfw.create_window(self.width, self.height, "GLFW Animals", None, None)
+        self.window = glfw.create_window(self.width, self.height, "B-Spline-Kurve", None, None)
         if not self.window:
             glfw.terminate()
             return
@@ -119,9 +103,9 @@ class RenderWindow():
 
         # initialize GL
         glViewport(0, 0, self.width, self.height)
-        glEnable(GL_DEPTH_TEST)
+        glPointSize(5.0) #size of GL_POINTS
         glClearColor(1.0, 1.0, 1.0, 1.0)  # Background Color
-        #glClearColor(self.scene.background[0],self.scene.background[1],self.scene.background[2],self.scene.background[3])
+
         glMatrixMode(GL_PROJECTION)
         glMatrixMode(GL_MODELVIEW)
 
@@ -131,12 +115,11 @@ class RenderWindow():
 
         self.scene = Scene(self.width, self.height)
 
-        #self.onSize(self.window, self.width, self.height) FIXME
 
         self.shiftFlag = False
         self.exitNow = False
         self.render = False
-        self.pointStack = []
+        #self.pointStack = []
 
 
     def run(self):
@@ -162,20 +145,20 @@ class RenderWindow():
         glfw.terminate()
 
 
+
     def mouseButtonCall(self, window, button, action, mods):
         if action == glfw.PRESS:
             if button == glfw.MOUSE_BUTTON_LEFT:
                 x, y = glfw.get_cursor_pos(window)
-                x = x / self.width
-                y = - (y / self.height)
-                #y = -y
+                x = x / self.width * 2 - 1
+                y = - (y / self.height * 2 - 1)
+
                 self.scene.points.append([x,y])
-                self.scene.counter += 1
+                self.scene.curvepoints += 1
 
-                #self.scene.updateBBox()
 
-                #render after glfw.RELEASE
-                #self.scene.render()
+
+
 
     def keyboardCall(self, window, key, scancode, action, mods):
         if action == glfw.PRESS:
@@ -192,38 +175,28 @@ class RenderWindow():
 
             if key == glfw.KEY_K:
                 if self.shiftFlag:
-                    print("curvepoints ++")
+                    #print("curvepoints ++")
+                    self.scene.curvepoints += 1
                 else:
-                    print("curvepoints --")
+                    #print("curvepoints --")
+                    self.scene.curvepoints -= 1
 
             if key == glfw.KEY_M:
                 if self.shiftFlag:
-                    print("degree ++")
+                    #print("degree ++")
+                    self.scene.degree += 1
                 else:
-                    print("degree --")
+                    #print("degree --")
+                    if self.scene.degree > 2: # k min 2
+                        self.scene.degree -= 1
 
-            #self.scene.render()
 
         if action == glfw.RELEASE:
             if key == glfw.KEY_LEFT_SHIFT or key == glfw.KEY_RIGHT_SHIFT:
                 self.shiftFlag = False
 
-    def onSize(self, win, width, height):
-        self.width = width
-        self.height = height
-        self.aspect = width/float(height)
-        glViewport(0, 0, self.width, self.height)
-        glMatrixMode(GL_PROJECTION)
-        glLoadIdentity()
 
-        if width <= height:
-            glOrtho(-1.5, 1.5,
-                    -1.5 * height / width, 1.5 * height / width,
-                    -4.0, 10.0)
-        else:
-            glOrtho(-1.5 * width / height, 1.5 * width / height,
-                    -1.5, 1.5,
-                    -4.0, 10.0)
+
 
 # main() function
 def main():
