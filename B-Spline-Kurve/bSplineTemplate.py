@@ -37,24 +37,53 @@ class Scene():
             glDrawArrays(GL_LINE_STRIP, 0, len(self.points))
 
 
-        #calc knotvector [kann eventuell nur aufgerufen werden wenn neuer punkt o.a veränderung kommt]
-        self.knotvector = []
+            #calc knotvector [kann eventuell nur aufgerufen werden wenn neuer punkt o.a veränderung kommt]
+            self.knotvector = []
 
-        points_len = len(self.points) - 1
+            points_len = len(self.points) - 1
 
-        if points_len < self.degree:
-            return
+            if points_len < self.degree:
+                return
 
-        for t in range(self.degree):
-            self.knotvector.append(0.0)
+            for t in range(self.degree):
+                self.knotvector.append(0)
 
-        for t in range(1, (points_len - (self.degree - 2))): #(n - (k - 2))
-            self.knotvector.append(t)
+            for t in range(1, (points_len - (self.degree - 2))): #(n - (k - 2))
+                self.knotvector.append(t)
 
-        for t in range(self.degree):#(n - (k - 2))
-            self.knotvector.append((points_len - (self.degree - 2)))
+            for t in range(self.degree):#(n - (k - 2))
+                self.knotvector.append((points_len - (self.degree - 2)))
 
 
+            curve_points = []
+            for i in range(self.degree):
+                t = max(self.knotvector) + (i / self.curvepoints) #FIXME + oder * ?
+
+                r = None
+                #which j in knotV is the nearest to t
+                for j, item in enumerate(self.knotvector):
+                    if item <= t < self.knotvector[j + 1]:
+                        r = j
+                        print("r: ", r)
+                        break
+
+                if r is not None:
+                    pass
+
+                p = self.deboor(self.degree, self.points, self.knotvector, t)
+
+                curve_points.append(p)
+
+
+            myVbo = vbo.VBO(np.array(curve_points, 'f'))
+            myVbo.bind()
+
+            glEnableClientState(GL_VERTEX_ARRAY)
+            glVertexPointer(2, GL_FLOAT, 0, myVbo)
+
+            glColor([1.0, 1.0, 0])
+
+            glDrawArrays(GL_LINE_STRIP, 0, len(curve_points))
 
         myVbo.unbind()
         glDisableClientState(GL_VERTEX_ARRAY)
@@ -62,7 +91,7 @@ class Scene():
         glFlush()
 
 
-    def deboor(self, degree, controlpoints, knotvector, t):
+    def deboor(self, degree, controlpoints, knotvector, t): #TODO
         print("Draw a curve, pikachu!")
 
 
