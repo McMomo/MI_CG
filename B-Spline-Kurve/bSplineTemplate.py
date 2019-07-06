@@ -15,6 +15,8 @@ class Scene():
         self.color = [0.0, 1.0, 0.0]
         self.background = [1.0, 1.0, 1.0, 1.0]
         self.points = []
+        self.curve_points = []
+
         self.degree = 4
         self.curvepoints = 0
         self.knotvector = []
@@ -30,69 +32,97 @@ class Scene():
         glVertexPointer(2, GL_FLOAT, 0, myVbo)
 
         glColor(self.color)
+        glPointSize(5.0)  # size of GL_POINTS
 
         # wenn ein punkt GL_POINT wenn mehr GL_LINE_STRIP
         glDrawArrays(GL_POINTS, 0, len(self.points))
         if len(self.points) > 1:
             glDrawArrays(GL_LINE_STRIP, 0, len(self.points))
 
-
-            #calc knotvector [kann eventuell nur aufgerufen werden wenn neuer punkt o.a veränderung kommt]
-            self.knotvector = []
-
-            points_len = len(self.points) - 1
-
-            if points_len < self.degree:
-                return
-
-            for t in range(self.degree):
-                self.knotvector.append(0)
-
-            for t in range(1, (points_len - (self.degree - 2))): #(n - (k - 2))
-                self.knotvector.append(t)
-
-            for t in range(self.degree):#(n - (k - 2))
-                self.knotvector.append((points_len - (self.degree - 2)))
-
-
-            curve_points = []
-            for i in range(self.degree):
-                t = max(self.knotvector) + (i / self.curvepoints) #FIXME + oder * ?
-
-                r = None
-                #which j in knotV is the nearest to t
-                for j, item in enumerate(self.knotvector):
-                    if item <= t < self.knotvector[j + 1]:
-                        r = j
-                        print("r: ", r)
-                        break
-
-                if r is not None:
-                    pass
-
-                p = self.deboor(self.degree, self.points, self.knotvector, t)
-
-                curve_points.append(p)
-
-
-            myVbo = vbo.VBO(np.array(curve_points, 'f'))
-            myVbo.bind()
+        if len(self.curve_points) is not 0:
+            curveVbo = vbo.VBO(np.array(self.curve_points, 'f'))
+            curveVbo.bind()
 
             glEnableClientState(GL_VERTEX_ARRAY)
-            glVertexPointer(2, GL_FLOAT, 0, myVbo)
+            glVertexPointer(2, GL_FLOAT, 0, curveVbo)
 
-            glColor([1.0, 1.0, 0])
+            glColor([1.0, 0, 0])
 
-            glDrawArrays(GL_LINE_STRIP, 0, len(curve_points))
+            glDrawArrays(GL_LINE_STRIP, 0, len(self.curve_points))
+            curveVbo.unbind()
 
         myVbo.unbind()
         glDisableClientState(GL_VERTEX_ARRAY)
 
         glFlush()
 
+    def deboor(self, k, r, degree, controlpoints, knotvector, t):  # TODO
+        # print("Draw the curve, pikachu!")
 
-    def deboor(self, degree, controlpoints, knotvector, t): #TODO
-        print("Draw a curve, pikachu!")
+        if k - 1 == 0:
+
+            if r == len(controlpoints):
+                return controlpoints[r - 1]
+            else:
+                return controlpoints[r]
+
+            try:
+                a = (t - knotvector[r]) / (knotvector[r - (k - 1) + degree] - knotvector[r])
+
+            except ZeroDivisionError:
+                a = 0
+
+            left_b = self.deboor(k - 1, r - 1, degree, controlpoints, knotvector, t)
+            right_b = self.deboor(k - 1, r, degree, controlpoints, knotvector, t)  # FIXME r - 1?
+
+            x = (1 - a) * left_b[0] + a * right_b[0]
+            y = (1 - a) * left_b[1] + a * right_b[1]
+
+            return [x, y]
+
+    def calc_curve(self):
+        # calc knotvector [kann eventuell nur aufgerufen werden wenn neuer punkt o.a veränderung kommt]
+        self.knotvector = self.calc_knotvector(len(self.points) - 1, self.degree)
+
+        for i in range(self.degree):
+            t = max(self.knotvector) * (i / self.curvepoints)  # FIXME + oder * ?
+
+            k = self.degree - 1
+            r = self.calc_r(t)
+
+            p = self.deboor(k, r, self.degree, self.points, self.knotvector, t)
+
+            self.curve_points.append(p)
+
+    def calc_knotvector(self, points_len, degree):
+        knotvector = []
+
+        # if points_len < degree:
+        # return
+
+        for t in range(degree):
+            knotvector.append(0)
+
+        for t in range(1, (points_len - (degree - 2))):  # (n - (k - 2))
+            knotvector.append(t)
+
+        for t in range(degree):  # (n - (k - 2))
+            knotvector.append((points_len - (degree - 2)))
+
+        return knotvector
+
+    def calc_r(self, t):
+        r = None
+        # which j in knotV is the nearest to t
+        for j, item in enumerate(self.knotvector):
+            if item <= t < self.knotvector[j + 1] or t == item:  # FIXME  or t == item ?
+                r = j
+                # print("r: ", r)
+                return r
+
+        return r
+
+
 
 
 class RenderWindow():
@@ -132,7 +162,6 @@ class RenderWindow():
 
         # initialize GL
         glViewport(0, 0, self.width, self.height)
-        glPointSize(5.0) #size of GL_POINTS
         glClearColor(1.0, 1.0, 1.0, 1.0)  # Background Color
 
         glMatrixMode(GL_PROJECTION)
@@ -185,6 +214,8 @@ class RenderWindow():
                 self.scene.points.append([x,y])
                 self.scene.curvepoints += 1
 
+                self.scene.calc_curve()
+
 
 
 
@@ -223,7 +254,6 @@ class RenderWindow():
         if action == glfw.RELEASE:
             if key == glfw.KEY_LEFT_SHIFT or key == glfw.KEY_RIGHT_SHIFT:
                 self.shiftFlag = False
-
 
 
 
