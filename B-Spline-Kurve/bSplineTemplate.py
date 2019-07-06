@@ -56,6 +56,7 @@ class Scene():
 
         glFlush()
 
+
     def deboor(self, k, r, degree, controlpoints, knotvector, t):  # TODO
         # print("Draw the curve, pikachu!")
 
@@ -66,33 +67,41 @@ class Scene():
             else:
                 return controlpoints[r]
 
-            try:
-                a = (t - knotvector[r]) / (knotvector[r - (k - 1) + degree] - knotvector[r])
+        try:
+            a = (t - knotvector[r]) / (knotvector[r - (k - 1) + degree] - knotvector[r])
 
-            except ZeroDivisionError:
-                a = 0
+        except ZeroDivisionError:
+            a = 0
 
-            left_b = self.deboor(k - 1, r - 1, degree, controlpoints, knotvector, t)
-            right_b = self.deboor(k - 1, r, degree, controlpoints, knotvector, t)  # FIXME r - 1?
+        left_b = self.deboor(k - 1, r - 1, degree, controlpoints, knotvector, t)
+        right_b = self.deboor(k - 1, r, degree, controlpoints, knotvector, t)  # FIXME k -1 || r - 1?
 
-            x = (1 - a) * left_b[0] + a * right_b[0]
-            y = (1 - a) * left_b[1] + a * right_b[1]
+        x = (1 - a) * left_b[0] + a * right_b[0]
+        y = (1 - a) * left_b[1] + a * right_b[1]
 
-            return [x, y]
+        return [x, y]
+
 
     def calc_curve(self):
-        # calc knotvector [kann eventuell nur aufgerufen werden wenn neuer punkt o.a veränderung kommt]
-        self.knotvector = self.calc_knotvector(len(self.points) - 1, self.degree)
+        # [kann eventuell nur aufgerufen werden wenn neuer punkt o.a veränderung kommt]
+        if len(self.points) > self.degree:
 
-        for i in range(self.degree):
-            t = max(self.knotvector) * (i / self.curvepoints)  # FIXME + oder * ?
+            # remove curve #todo
+            self.curvepoints = []
+            self.render()
 
-            k = self.degree - 1
-            r = self.calc_r(t)
+            self.knotvector = self.calc_knotvector(len(self.points) - 1, self.degree)
 
-            p = self.deboor(k, r, self.degree, self.points, self.knotvector, t)
+            for i in range(self.degree):
+                t = max(self.knotvector) * (i / self.curvepoints)  # FIXME + oder * ?
 
-            self.curve_points.append(p)
+                k = self.degree - 1
+                r = self.calc_r(t)
+
+                p = self.deboor(k, r, self.degree, self.points, self.knotvector, t)
+
+                self.curve_points.append(p)
+
 
     def calc_knotvector(self, points_len, degree):
         knotvector = []
@@ -110,6 +119,7 @@ class Scene():
             knotvector.append((points_len - (degree - 2)))
 
         return knotvector
+
 
     def calc_r(self, t):
         r = None
@@ -177,8 +187,6 @@ class RenderWindow():
         self.shiftFlag = False
         self.exitNow = False
         self.render = False
-        #self.pointStack = []
-
 
     def run(self):
         glfw.set_time(0.0)
@@ -238,8 +246,11 @@ class RenderWindow():
                     #print("curvepoints ++")
                     self.scene.curvepoints += 1
                 else:
-                    #print("curvepoints --")
-                    self.scene.curvepoints -= 1
+                    # print("curvepoints --")kkm
+                    if self.scene.curvepoints > 1:
+                        self.scene.curvepoints -= 1
+
+                self.scene.calc_curve()
 
             if key == glfw.KEY_M:
                 if self.shiftFlag:
@@ -250,11 +261,11 @@ class RenderWindow():
                     if self.scene.degree > 2: # k min 2
                         self.scene.degree -= 1
 
+                self.scene.calc_curve()
 
         if action == glfw.RELEASE:
             if key == glfw.KEY_LEFT_SHIFT or key == glfw.KEY_RIGHT_SHIFT:
                 self.shiftFlag = False
-
 
 
 # main() function
