@@ -15,4 +15,33 @@ for r := 1 to h do
             Let pi,r = (1 - ai,r) pi-1,r-1 + ai,r pi,r-1
         end
 
-pk-s,p-s is the point p(t). 
+pk-s,p-s is the point p(t).
+
+
+###########################################################
+
+De Boor’s algorithm
+
+… also called the De Boor-Cox algorithm. It can be seen as the generalization of the de Casteljau. (A Bézier curve is in fact a special case of B-spline.)
+
+input :
+    degree k
+    n+1 control points d0,…,dn
+    knot vector t0≤t1≤⋯≤tm with m=n+k+1
+    parameter t∈[ti,ti+1)k≤i≤n
+
+output : The point S(t)=dkj on the curve.
+
+compute :
+    For j=i−k,…,i, set d0j=dj. Then compute the points
+
+        drj=(1−wj,k−(r−1))dr−1j−1+wj,k−(r−1)dr−1j
+    for
+        r=1,…,k,j=i−k+r,…,i
+    with
+        wj,k−(r−1)=t−tj / tj+k−(r−1)−tj.
+
+Be careful with the indices! Here I’ve expressed the point at depth r in terms of the points at depth r−1;
+that is why there is the r−1 everywhere in the formula.
+(It becomes much more elegant if we express r+1 in terms of r.)
+This might be a bit annoying, but I think it’s also more practical for the implementation.

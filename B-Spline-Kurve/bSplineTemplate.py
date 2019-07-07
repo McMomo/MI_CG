@@ -39,7 +39,7 @@ class Scene():
         if len(self.points) > 1:
             glDrawArrays(GL_LINE_STRIP, 0, len(self.points))
 
-        if len(self.curve_points) is not 0:
+        if len(self.points) > self.degree:
             curveVbo = vbo.VBO(np.array(self.curve_points, 'f'))
             curveVbo.bind()
 
@@ -56,39 +56,15 @@ class Scene():
 
         glFlush()
 
-    def deboor(self, k, r, degree, controlpoints, knotvector, t):
-        # print("Draw the curve, pikachu!")
-
-        if k - 1 == 0:
-
-            if r == len(controlpoints):
-                return controlpoints[r - 1]
-            else:
-                return controlpoints[r]
-
-        try:
-            a = (t - knotvector[r]) / (knotvector[r - k + degree] - knotvector[r])  #FIXME || (k - 1)
-
-        except ZeroDivisionError:
-            a = 0
-
-        left_b = self.deboor(k - 1, r - 1, degree, controlpoints, knotvector, t)
-        right_b = self.deboor(k - 1, r, degree, controlpoints, knotvector, t)  # FIXME k -1 || r - 1?
-
-        x = (1 - a) * left_b[0] + a * right_b[0]
-        y = (1 - a) * left_b[1] + a * right_b[1]
-
-        return [x, y]
-
-    def deboor2(self, controlpoints, knotvector, r, j, t):
+    def deboor(self, controlpoints, knotvector, r, j, t):
         k = len(knotvector) - len(controlpoints) - 1
         if r == 0:
             return np.array(controlpoints[j])
         else:
             return (1 - self.calc_a(knotvector, j, k - r + 1, t)) \
-                   * self.deboor2(controlpoints, knotvector, r - 1, j - 1, t) \
+                   * self.deboor(controlpoints, knotvector, r - 1, j - 1, t) \
                    + self.calc_a(knotvector, j, k - r + 1, t) \
-                   * self.deboor2(controlpoints, knotvector, r - 1, j, t)
+                   * self.deboor(controlpoints, knotvector, r - 1, j, t)
 
     def calc_a(self, knotvector, i, k, t):
         if knotvector[i] < knotvector[i + k]:
@@ -96,48 +72,32 @@ class Scene():
         else:
             return 0
 
-    def calc_curve2(self):
-        # [kann eventuell nur aufgerufen werden wenn neuer punkt o.a veränderung kommt]
-        if len(self.points) > self.degree:
-
-            # remove curve
-            self.curve_points = []
-            self.render()
-
-            self.knotvector = self.calc_knotvector(len(self.points) - 1, self.degree)
-
-            for i in range(self.degree):
-                t = max(self.knotvector) * (i / self.curvepoints)  # FIXME + oder * ?
-
-                k = self.degree - 1
-                r = self.calc_r(t)
-
-                p = self.deboor(k, r, self.degree, self.points, self.knotvector, t)
-
-                self.curve_points.append(p)
 
     def calc_curve(self):
-        if len(self.points) > self.degree:
 
-            self.curve_points = []
-            self.render()
+        self.curve_points = []
+        self.render()
 
-            self.knotvector = self.calc_knotvector(len(self.points) - 1, self.degree)
+        self.knotvector = self.calc_knotvector(len(self.points), self.degree)
 
-            n = len(self.points) - 1
-            m = len(self.knotvector)
+        n = len(self.points) - 1
+        m = len(self.knotvector) - 1
 
-            if self.degree == m - n - 1:
-                print("You're right!")
-            else:
-                print("degree: ", self.degree, " != ", "m-n-1: ", m - n - 1, )
+        '''
+        print("n (len(points)): ", n)
+        if self.degree == m - n - 1:
+            print("You're right!")
+        else:
+            print("degree: ", self.degree, " != ", "m-n-1: ", m - n - 1, )
+        '''
 
-            for j in range(self.degree, m - self.degree):
-                if self.knotvector[j] != self.knotvector[j + 1]:
-                    for t in range(self.knotvector[j], self.knotvector[j + 1]):
-                        p = self.deboor2(self.points, self.knotvector, self.degree, j, t)
-                        self.curve_points.append(p)
-                        print("p: ", p)
+        for j in range(self.degree, m - self.degree):
+            if self.knotvector[j] != self.knotvector[j + 1]:
+                # linspace == range with small step size
+                for t in np.linspace(self.knotvector[j], self.knotvector[j + 1], self.curvepoints * 2):
+                    p = self.deboor(self.points, self.knotvector, self.degree, j, t)
+                    self.curve_points.append(p)
+                    print("p: ", p)
 
 
     def calc_knotvector(self, points_len, degree):
