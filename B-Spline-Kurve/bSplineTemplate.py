@@ -39,7 +39,7 @@ class Scene():
         if len(self.points) > 1:
             glDrawArrays(GL_LINE_STRIP, 0, len(self.points))
 
-        if len(self.points) > self.degree:
+        if len(self.points) != 0:
             curveVbo = vbo.VBO(np.array(self.curve_points, 'f'))
             curveVbo.bind()
 
@@ -76,20 +76,12 @@ class Scene():
     def calc_curve(self):
 
         self.curve_points = []
-        self.render()
+        # self.render()
 
         self.knotvector = self.calc_knotvector(len(self.points), self.degree)
 
         n = len(self.points) - 1
         m = len(self.knotvector) - 1
-
-        '''
-        print("n (len(points)): ", n)
-        if self.degree == m - n - 1:
-            print("You're right!")
-        else:
-            print("degree: ", self.degree, " != ", "m-n-1: ", m - n - 1, )
-        '''
 
         for j in range(self.degree, m - self.degree):
             if self.knotvector[j] != self.knotvector[j + 1]:
@@ -97,7 +89,7 @@ class Scene():
                 for t in np.linspace(self.knotvector[j], self.knotvector[j + 1], self.curvepoints * 2):
                     p = self.deboor(self.points, self.knotvector, self.degree, j, t)
                     self.curve_points.append(p)
-                    print("p: ", p)
+                    #print("p: ", p)
 
 
     def calc_knotvector(self, points_len, degree):
@@ -116,18 +108,6 @@ class Scene():
             knotvector.append((points_len - (degree - 2)))
 
         return knotvector
-
-
-    def calc_r(self, t):
-        r = None
-        # which j in knotV is the nearest to t
-        for j, item in enumerate(self.knotvector):
-            if item <= t < self.knotvector[j + 1] or t == item:  # FIXME  or t == item ?
-                r = j
-                # print("r: ", r)
-                return r
-
-        return r
 
 
 

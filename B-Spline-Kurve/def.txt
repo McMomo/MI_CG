@@ -22,7 +22,8 @@ pk-s,p-s is the point p(t).
 
 De Boor’s algorithm
 
-… also called the De Boor-Cox algorithm. It can be seen as the generalization of the de Casteljau. (A Bézier curve is in fact a special case of B-spline.)
+… also called the De Boor-Cox algorithm. It can be seen as the generalization of the de Casteljau.
+(A Bézier curve is in fact a special case of B-spline.)
 
 input :
     degree k
