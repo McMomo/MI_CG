@@ -1,0 +1,18 @@
+Input: a value t
+Output: the point on the curve, x(t)
+
+#calc knotvector
+If t lies in [tk,tk+1) and t != tk, let h = p (i.e., inserting t p times) and s = 0;
+If t = tk and tk is a knot of multiplicity s, let h = p - s (i.e., inserting t p - s time);
+Copy the affected control points pk-s, pk-s-1, pk-s-2, ..., pk-p+1 and pk-p to a new array and rename them as pk-s,0, pk-s-1,0, pk-s-2,0, ..., pk-p+1,0;
+
+
+#deboor
+for r := 1 to h do
+    for i := k-p+r to k-s do
+        begin
+            Let ai,r = (t - ti) / ( ti+p-r+1 - ti )
+            Let pi,r = (1 - ai,r) pi-1,r-1 + ai,r pi,r-1
+        end
+
+pk-s,p-s is the point p(t). 
