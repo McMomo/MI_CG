@@ -51,32 +51,34 @@ class Scene():
 
         glFlush()
 
+
     def calc_curve(self):
+        if len(self.points) >= self.degree:
+            self.curvepoints = []
 
-        self.curvepoints = []
-        # self.render()
+            self.knotvector = self.calc_knotvector(len(self.points), self.degree)
 
-        self.knotvector = self.calc_knotvector(len(self.points), self.degree)
+            m = len(self.knotvector) - 1
 
-        m = len(self.knotvector) - 1
+            for j in range(self.degree, m - self.degree):
+                if self.knotvector[j] != self.knotvector[j + 1]:
+                    for t in np.linspace(self.knotvector[j], self.knotvector[j + 1], self.curvepoints_count):
+                        p = self.deboor(self.degree, self.points, self.knotvector, j, t)
+                        self.curvepoints.append(p)
+                        # print("p: ", p)
 
-        for j in range(self.degree, m - self.degree):
-            if self.knotvector[j] != self.knotvector[j + 1]:
-                for t in np.linspace(self.knotvector[j], self.knotvector[j + 1], self.curvepoints_count):
-                    p = self.deboor(self.degree, self.points, self.knotvector, j, t)
-                    self.curvepoints.append(p)
-                    # print("p: ", p)
 
     def calc_knotvector(self, points_len, degree):
         knotvector = []
 
-        for t in range(degree):
+        for t in range(degree + 1):  # FIXME + 1
             knotvector.append(0)
-        for t in range(1, (points_len - (degree - 2))):  # (n - (k - 2))
+        for t in range(1, (points_len - (degree - 2)) - 1):  # (n - (k - 2)) FIXME - 1
             knotvector.append(t)
         for t in range(degree):  # (n - (k - 2))
-            knotvector.append((points_len - (degree - 2)))
+            knotvector.append((points_len - (degree - 2)) - 2)  # FIXME - 2
 
+        print(knotvector)
         return knotvector
 
     def deboor(self, degree, controlpoints, knotvector, j, t):
