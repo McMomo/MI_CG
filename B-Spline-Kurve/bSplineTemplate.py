@@ -1,6 +1,5 @@
-import glfw, os, sys
+import glfw, os
 from OpenGL.GL import *
-from OpenGL.GLU import *
 from OpenGL.arrays import vbo
 import numpy as np
 
@@ -27,9 +26,8 @@ class Scene():
         glVertexPointer(2, GL_FLOAT, 0, myVbo)
 
         glColor([0.0, 0.0, 0.0])
-        glPointSize(5.0)  # size of GL_POINTS
+        glPointSize(5.0)
 
-        # wenn ein punkt GL_POINT wenn mehr GL_LINE_STRIP
         glDrawArrays(GL_POINTS, 0, len(self.points))
         if len(self.points) > 1:
             glDrawArrays(GL_LINE_STRIP, 0, len(self.points))
@@ -60,23 +58,22 @@ class Scene():
 
             m = len(self.knotvector) - 1
 
-            for j in range(self.degree - 1, m - self.degree + 1):  # FIXME - 1, + 1
+            for j in range(self.degree - 1, m - self.degree + 1):
                 if self.knotvector[j] != self.knotvector[j + 1]:
                     for t in np.linspace(self.knotvector[j], self.knotvector[j + 1], self.curvepoints_count):
                         p = self.deboor(self.degree, self.points, self.knotvector, j, t)
                         self.curvepoints.append(p)
-                        # print("p: ", p)
 
 
     def calc_knotvector(self, points_len, degree):
         knotvector = []
 
-        for t in range(degree):  # FIXME + 1
+        for t in range(degree):
             knotvector.append(0)
-        for t in range(1, (points_len - (degree - 2))):  # (n - (k - 2)) FIXME - 1
+        for t in range(1, (points_len - (degree - 2))):  # (n - (k - 2))
             knotvector.append(t)
         for t in range(degree):  # (n - (k - 2))
-            knotvector.append((points_len - (degree - 2)))  # FIXME - 2
+            knotvector.append((points_len - (degree - 2)))
 
         print(knotvector)
         return knotvector
@@ -155,7 +152,6 @@ class RenderWindow():
 
         self.scene = Scene()
 
-
         self.shiftFlag = False
         self.exitNow = False
         self.render = False
@@ -214,10 +210,8 @@ class RenderWindow():
 
             if key == glfw.KEY_M:
                 if self.shiftFlag:
-                    # print("curvepoints ++")
                     self.scene.curvepoints_count += 1
                 else:
-                    # print("curvepoints --")
                     if self.scene.curvepoints_count > 1:
                         self.scene.curvepoints_count -= 1
 
@@ -225,10 +219,8 @@ class RenderWindow():
 
             if key == glfw.KEY_K:
                 if self.shiftFlag:
-                    #print("degree ++")
                     self.scene.degree += 1
                 else:
-                    #print("degree --")
                     if self.scene.degree > 2: # k min 2
                         self.scene.degree -= 1
 
