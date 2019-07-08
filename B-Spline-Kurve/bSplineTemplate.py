@@ -56,15 +56,16 @@ class Scene():
 
         glFlush()
 
-    def deboor(self, controlpoints, knotvector, r, j, t):
+    def deboor(self, r, controlpoints, knotvector, j, t):
         k = len(knotvector) - len(controlpoints) - 1
         if r == 0:
             return np.array(controlpoints[j])
         else:
             return (1 - self.calc_a(knotvector, j, k - r + 1, t)) \
-                   * self.deboor(controlpoints, knotvector, r - 1, j - 1, t) \
+                   * self.deboor(r - 1, controlpoints, knotvector, j - 1, t) \
                    + self.calc_a(knotvector, j, k - r + 1, t) \
-                   * self.deboor(controlpoints, knotvector, r - 1, j, t)
+                   * self.deboor(r - 1, controlpoints, knotvector, j, t)
+
 
     def calc_a(self, knotvector, i, k, t):
         if knotvector[i] < knotvector[i + k]:
@@ -87,7 +88,7 @@ class Scene():
             if self.knotvector[j] != self.knotvector[j + 1]:
                 # linspace == range with small step size
                 for t in np.linspace(self.knotvector[j], self.knotvector[j + 1], self.curvepoints * 2):
-                    p = self.deboor(self.points, self.knotvector, self.degree, j, t)
+                    p = self.deboor(self.degree, self.points, self.knotvector, j, t)
                     self.curve_points.append(p)
                     #print("p: ", p)
 
@@ -218,9 +219,9 @@ class RenderWindow():
             if key == glfw.KEY_LEFT_SHIFT or key == glfw.KEY_RIGHT_SHIFT:
                 self.shiftFlag = True
 
-            if key == glfw.KEY_K:
+            if key == glfw.KEY_M:
                 if self.shiftFlag:
-                    #print("curvepoints ++")
+                    # print("curvepoints ++")
                     self.scene.curvepoints += 1
                 else:
                     # print("curvepoints --")kkm
@@ -229,7 +230,7 @@ class RenderWindow():
 
                 self.scene.calc_curve()
 
-            if key == glfw.KEY_M:
+            if key == glfw.KEY_K:
                 if self.shiftFlag:
                     #print("degree ++")
                     self.scene.degree += 1
