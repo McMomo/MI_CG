@@ -75,7 +75,6 @@ class Scene():
         for t in range(degree):  # (n - (k - 2))
             knotvector.append((points_len - (degree - 2)))
 
-        print(knotvector)
         return knotvector
 
     def deboor(self, degree, controlpoints, knotvector, j, t):
@@ -212,7 +211,10 @@ class RenderWindow():
                 if self.shiftFlag:
                     self.scene.curvepoints_count += 1
                 else:
-                    if self.scene.curvepoints_count > 1:
+                    if self.scene.curvepoints_count > len(self.scene.knotvector):
+                        self.scene.curvepoints_count = len(self.scene.knotvector)
+
+                    if self.scene.curvepoints_count > 2:
                         self.scene.curvepoints_count -= 1
 
                 self.scene.calc_curve()
