@@ -12,7 +12,7 @@ class Scene():
         self.points = []
         self.curvepoints = []
         self.degree = 4
-        self.curvepoints_count = 0
+        self.m = 10
         self.knotvector = []
 
 
@@ -60,7 +60,9 @@ class Scene():
 
             for j in range(self.degree - 1, m - self.degree + 1):
                 if self.knotvector[j] != self.knotvector[j + 1]:
-                    for t in np.linspace(self.knotvector[j], self.knotvector[j + 1], self.curvepoints_count):
+                    # Verwenden Sie die Funktion deboor() dann,
+                    # um eine feste Anzahl m von Punkten auf der Kurve zu berechnen
+                    for t in np.linspace(self.knotvector[j], self.knotvector[j + 1], self.m):
                         p = self.deboor(self.degree, self.points, self.knotvector, j, t)
                         self.curvepoints.append(p)
 
@@ -187,7 +189,7 @@ class RenderWindow():
                 y = - (y / self.height * 2 - 1)
 
                 self.scene.points.append(np.array([x, y]))
-                self.scene.curvepoints_count += 1
+                self.scene.m += 1
 
                 self.scene.calc_curve()
 
@@ -209,19 +211,19 @@ class RenderWindow():
 
             if key == glfw.KEY_M:
                 if self.shiftFlag:
-                    self.scene.curvepoints_count += 1
+                    self.scene.m += 1
                 else:
-                    if self.scene.curvepoints_count > len(self.scene.knotvector):
-                        self.scene.curvepoints_count = len(self.scene.knotvector)
-
-                    if self.scene.curvepoints_count > 2:
-                        self.scene.curvepoints_count -= 1
+                    if self.scene.m > len(self.scene.knotvector):
+                        self.scene.m = len(self.scene.knotvector)
+                    if self.scene.m > 2:
+                        self.scene.m -= 1
 
                 self.scene.calc_curve()
 
             if key == glfw.KEY_K:
                 if self.shiftFlag:
-                    self.scene.degree += 1
+                    if self.scene.degree <= len(self.scene.points):
+                        self.scene.degree += 1
                 else:
                     if self.scene.degree > 2: # k min 2
                         self.scene.degree -= 1
