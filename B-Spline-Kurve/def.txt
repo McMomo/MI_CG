@@ -36,7 +36,7 @@ output : The point S(t)=dkj on the curve.
 compute :
     For j=i−k,…,i, set d0j=dj. Then compute the points
 
-        drj=(1−wj,k−(r−1))dr−1j−1+wj,k−(r−1)dr−1j
+        drj=(1−wj,k−(r−1))dr−1j−1 + wj,k−(r−1)dr−1j
     for
         r=1,…,k,j=i−k+r,…,i
     with

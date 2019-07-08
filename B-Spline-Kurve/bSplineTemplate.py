@@ -9,16 +9,11 @@ import numpy as np
 
 
 class Scene():
-    def __init__(self, width, height):
-        self.width = width
-        self.height = height
-        self.color = [0.0, 1.0, 0.0]
-        self.background = [1.0, 1.0, 1.0, 1.0]
+    def __init__(self):
         self.points = []
-        self.curve_points = []
-
+        self.curvepoints = []
         self.degree = 4
-        self.curvepoints = 0
+        self.curvepoints_count = 0
         self.knotvector = []
 
 
@@ -31,7 +26,7 @@ class Scene():
         glEnableClientState(GL_VERTEX_ARRAY)
         glVertexPointer(2, GL_FLOAT, 0, myVbo)
 
-        glColor(self.color)
+        glColor([0.0, 0.0, 0.0])
         glPointSize(5.0)  # size of GL_POINTS
 
         # wenn ein punkt GL_POINT wenn mehr GL_LINE_STRIP
@@ -39,8 +34,8 @@ class Scene():
         if len(self.points) > 1:
             glDrawArrays(GL_LINE_STRIP, 0, len(self.points))
 
-        if len(self.points) != 0:
-            curveVbo = vbo.VBO(np.array(self.curve_points, 'f'))
+        if len(self.points) >= self.degree:
+            curveVbo = vbo.VBO(np.array(self.curvepoints, 'f'))
             curveVbo.bind()
 
             glEnableClientState(GL_VERTEX_ARRAY)
@@ -48,7 +43,7 @@ class Scene():
 
             glColor([1.0, 0, 0])
 
-            glDrawArrays(GL_LINE_STRIP, 0, len(self.curve_points))
+            glDrawArrays(GL_LINE_STRIP, 0, len(self.curvepoints))
             curveVbo.unbind()
 
         myVbo.unbind()
@@ -56,61 +51,54 @@ class Scene():
 
         glFlush()
 
-    def deboor(self, r, controlpoints, knotvector, j, t):
-        k = len(knotvector) - len(controlpoints) - 1
-        if r == 0:
-            return np.array(controlpoints[j])
-        else:
-            return (1 - self.calc_a(knotvector, j, k - r + 1, t)) \
-                   * self.deboor(r - 1, controlpoints, knotvector, j - 1, t) \
-                   + self.calc_a(knotvector, j, k - r + 1, t) \
-                   * self.deboor(r - 1, controlpoints, knotvector, j, t)
-
-
-    def calc_a(self, knotvector, i, k, t):
-        if knotvector[i] < knotvector[i + k]:
-            return (t - knotvector[i]) / (knotvector[i + k] - knotvector[i])
-        else:
-            return 0
-
-
     def calc_curve(self):
 
-        self.curve_points = []
+        self.curvepoints = []
         # self.render()
 
         self.knotvector = self.calc_knotvector(len(self.points), self.degree)
 
-        n = len(self.points) - 1
         m = len(self.knotvector) - 1
 
         for j in range(self.degree, m - self.degree):
             if self.knotvector[j] != self.knotvector[j + 1]:
-                # linspace == range with small step size
-                for t in np.linspace(self.knotvector[j], self.knotvector[j + 1], self.curvepoints * 2):
+                for t in np.linspace(self.knotvector[j], self.knotvector[j + 1], self.curvepoints_count):
                     p = self.deboor(self.degree, self.points, self.knotvector, j, t)
-                    self.curve_points.append(p)
-                    #print("p: ", p)
-
+                    self.curvepoints.append(p)
+                    # print("p: ", p)
 
     def calc_knotvector(self, points_len, degree):
         knotvector = []
 
-        # if points_len < degree:
-        # return
-
         for t in range(degree):
             knotvector.append(0)
-
         for t in range(1, (points_len - (degree - 2))):  # (n - (k - 2))
             knotvector.append(t)
-
         for t in range(degree):  # (n - (k - 2))
             knotvector.append((points_len - (degree - 2)))
 
         return knotvector
 
+    def deboor(self, degree, controlpoints, knotvector, j, t):
+        n = len(knotvector) - len(controlpoints) - 1
 
+        if degree == 0:
+            return np.array(controlpoints[j])
+
+        else:
+            w1 = self.calc_w(knotvector, j, n - degree + 1, t)
+            w2 = self.calc_w(knotvector, j, n - degree + 1, t)
+
+            d1 = self.deboor(degree - 1, controlpoints, knotvector, j - 1, t)
+            d2 = self.deboor(degree - 1, controlpoints, knotvector, j, t)
+
+            return (1 - w1) * d1 + w2 * d2
+
+    def calc_w(self, knotvector, i, n, t):
+        if knotvector[i] < knotvector[i + n]:
+            return (t - knotvector[i]) / (knotvector[i + n] - knotvector[i])
+        else:
+            return 0
 
 
 class RenderWindow():
@@ -159,7 +147,7 @@ class RenderWindow():
         glfw.set_key_callback(self.window, self.keyboardCall)
         glfw.set_mouse_button_callback(self.window, self.mouseButtonCall)
 
-        self.scene = Scene(self.width, self.height)
+        self.scene = Scene()
 
 
         self.shiftFlag = False
@@ -197,11 +185,10 @@ class RenderWindow():
                 x = x / self.width * 2 - 1
                 y = - (y / self.height * 2 - 1)
 
-                self.scene.points.append([x,y])
-                self.scene.curvepoints += 1
+                self.scene.points.append(np.array([x, y]))
+                self.scene.curvepoints_count += 1
 
                 self.scene.calc_curve()
-
 
 
 
@@ -222,11 +209,11 @@ class RenderWindow():
             if key == glfw.KEY_M:
                 if self.shiftFlag:
                     # print("curvepoints ++")
-                    self.scene.curvepoints += 1
+                    self.scene.curvepoints_count += 1
                 else:
-                    # print("curvepoints --")kkm
-                    if self.scene.curvepoints > 1:
-                        self.scene.curvepoints -= 1
+                    # print("curvepoints --")
+                    if self.scene.curvepoints_count > 1:
+                        self.scene.curvepoints_count -= 1
 
                 self.scene.calc_curve()
 
