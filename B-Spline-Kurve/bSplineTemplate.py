@@ -60,7 +60,7 @@ class Scene():
 
             m = len(self.knotvector) - 1
 
-            for j in range(self.degree, m - self.degree):
+            for j in range(self.degree - 1, m - self.degree + 1):  # FIXME - 1, + 1
                 if self.knotvector[j] != self.knotvector[j + 1]:
                     for t in np.linspace(self.knotvector[j], self.knotvector[j + 1], self.curvepoints_count):
                         p = self.deboor(self.degree, self.points, self.knotvector, j, t)
@@ -71,12 +71,12 @@ class Scene():
     def calc_knotvector(self, points_len, degree):
         knotvector = []
 
-        for t in range(degree + 1):  # FIXME + 1
+        for t in range(degree):  # FIXME + 1
             knotvector.append(0)
-        for t in range(1, (points_len - (degree - 2)) - 1):  # (n - (k - 2)) FIXME - 1
+        for t in range(1, (points_len - (degree - 2))):  # (n - (k - 2)) FIXME - 1
             knotvector.append(t)
         for t in range(degree):  # (n - (k - 2))
-            knotvector.append((points_len - (degree - 2)) - 2)  # FIXME - 2
+            knotvector.append((points_len - (degree - 2)))  # FIXME - 2
 
         print(knotvector)
         return knotvector
@@ -85,6 +85,10 @@ class Scene():
         n = len(knotvector) - len(controlpoints) - 1
 
         if degree == 0:
+            if j == len(controlpoints):
+                return np.array(controlpoints[j - 1])
+            if j < 0:
+                return np.array(controlpoints[0])
             return np.array(controlpoints[j])
 
         else:
