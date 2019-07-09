@@ -53,15 +53,14 @@ class Scene():
 
             self.knotvector = self.calc_knotvector(len(self.points), self.degree)
 
-            m = len(self.knotvector) - 1
-
-            for j in range(self.degree - 1, m - self.degree + 1):
+            for j in range(self.degree - 1, len(self.knotvector) - self.degree):
                 if self.knotvector[j] != self.knotvector[j + 1]:
                     # Verwenden Sie die Funktion deboor() dann,
                     # um eine feste Anzahl m von Punkten auf der Kurve zu berechnen
                     for t in np.linspace(self.knotvector[j], self.knotvector[j + 1], self.m):
                         p = self.deboor(self.degree, self.points, self.knotvector, j, t)
                         self.curvepoints.append(p)
+                        print("p: ", p)
 
 
     def calc_knotvector(self, points_len, degree):
@@ -76,8 +75,9 @@ class Scene():
 
         return knotvector
 
+
     def deboor(self, degree, controlpoints, knotvector, j, t):
-        n = len(knotvector) - len(controlpoints) - 1
+        n = len(knotvector) - len(controlpoints) - 1  # ordnung
 
         if degree == 0:
             if j == len(controlpoints):
@@ -86,14 +86,14 @@ class Scene():
                 return np.array(controlpoints[0])
             return np.array(controlpoints[j])
 
-        else:
-            w1 = self.calc_w(knotvector, j, n - degree + 1, t)
-            w2 = self.calc_w(knotvector, j, n - degree + 1, t)
+        else:  # Folie 293
+            w = self.calc_w(knotvector, j, n - degree + 1, t)
 
             d1 = self.deboor(degree - 1, controlpoints, knotvector, j - 1, t)
             d2 = self.deboor(degree - 1, controlpoints, knotvector, j, t)
 
-            return (1 - w1) * d1 + w2 * d2
+            return (1 - w) * d1 + w * d2
+
 
     def calc_w(self, knotvector, i, n, t):
         if knotvector[i] < knotvector[i + n]:
