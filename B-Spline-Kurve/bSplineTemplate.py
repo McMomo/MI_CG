@@ -4,9 +4,6 @@ from OpenGL.arrays import vbo
 import numpy as np
 
 
-
-
-
 class Scene():
     def __init__(self):
         self.points = []
@@ -32,7 +29,7 @@ class Scene():
         if len(self.points) > 1:
             glDrawArrays(GL_LINE_STRIP, 0, len(self.points))
 
-        if len(self.points) >= self.degree:
+        if len(self.points) >= self.degree - 1:
             curveVbo = vbo.VBO(np.array(self.curvepoints, 'f'))
             curveVbo.bind()
 
