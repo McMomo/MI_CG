@@ -1,0 +1,17 @@
+CG
+gitignore
+raytracerExample
+raytracerExample2
+.DS_Store
+.idea/
+ClippingAndRaster/
+glfwAnimals/__pycache__/
+raytrace/__pycache__/
+raytrace/result/Testphase/
+raytrace/result/Threadphase/
+raytrace/result/texture_2019-05-06 12:31:44.365808.png
+raytrace/result/texture_2019-05-06 12:34:19.986532.png
+raytrace/result/texture_2019-05-06 12:37:58.864451.png
+raytrace/result/texture_2019-05-06 12:39:43.447136.png
+raytrace/result/texture_2019-05-06 12:44:07.525942.png
+raytrace/result/texture_2019-05-06 12:44:53.261037.png
